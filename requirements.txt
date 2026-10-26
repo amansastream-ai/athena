@@ -1,0 +1,21 @@
+# Jaay — dependances runtime (versions minimales testees le 2026-10-25)
+# Vercel installe ce fichier automatiquement pour la fonction Python.
+fastapi>=0.162.0
+uvicorn[standard]>=0.34.0
+SQLAlchemy>=2.0.36
+alembic>=1.14.0
+pydantic>=2.10.0
+Jinja2>=3.1.5
+python-multipart>=0.0.20
+httpx>=0.28.0
+Pillow>=11.0.0
+
+# PostgreSQL : OBLIGATOIRE sur Vercel (le disque serverless est ephemeral).
+psycopg2-binary>=2.9.10
+
+# Stockage objet S3 / Cloudflare R2 pour les photos produits sur Vercel.
+# Sans ces variables, les uploads doivent rester en backend 'local' (VPS).
+boto3>=1.35.0
+
+# Tests (exclus du bundle Vercel via vercel.json / .vercelignore)
+pytest>=9.0.0
