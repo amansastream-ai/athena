@@ -23,7 +23,8 @@ ROOT_FILES = [
     ".env.example", ".env.vercel.example", ".gitignore", ".vercelignore",
     ".python-version", "AVANT-GITHUB.md", "DIAGNOSTIC-BUILD-VERCEL.md",
     "Dockerfile", "Makefile", "POUR-GITHUB.md", "RAPPORT.md", "README.md",
-    "VARIABLES-VERCEL-DISPARUES.md", "ETAPE-SUIVANTE.md", "VERCEL.md", "alembic.ini", "docker-compose.yml", "index.py", "pytest.ini",
+    "VARIABLES-VERCEL-DISPARUES.md", "ETAPE-SUIVANTE.md",
+    "CORRECTIF-APP-MANQUANT.md", "FIX-SUPABASE-IPV6.md", "VERCEL.md", "alembic.ini", "docker-compose.yml", "index.py", "pytest.ini",
     "requirements.txt", "vercel.json",
 ]
 DIRS = ["app", "docs", "tests", "scripts", "ops", "migrations", ".github"]

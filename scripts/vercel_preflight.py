@@ -27,11 +27,14 @@ def main() -> int:
     blockers = 0
     warnings = 0
 
-    # Importer la configuration apres les controles bruts, mais sans planter si
-    # JAAY_SECRET_KEY manque (load_settings() leve volontairement une erreur).
+    # Importer la configuration apres les controles bruts. load_settings() ne
+    # leve plus d'exception : il collecte settings.config_error (voir plus bas).
     try:
         from app.config import settings
-        config_error = None
+        config_error = settings.config_error or None
+        if config_error:
+            line("FAIL", "configuration applicative", config_error[:220])
+            blockers += 1
     except Exception as exc:  # pragma: no cover
         settings = None
         config_error = f"{type(exc).__name__}: {exc}"
@@ -48,7 +51,18 @@ def main() -> int:
 
     db_url = os.environ.get("JAAY_DATABASE_URL", "")
     if db_url.startswith(("postgres://", "postgresql://", "postgresql+psycopg2://")):
-        line("OK", "JAAY_DATABASE_URL", "PostgreSQL")
+        from app.db_network import is_direct_supabase, is_supabase_pooler, normalize_database_url
+        normalized = normalize_database_url(db_url)
+        if is_direct_supabase(normalized) and not os.environ.get("JAAY_ALLOW_IPV6_DB"):
+            line("FAIL", "JAAY_DATABASE_URL",
+                 "connexion DIRECTE Supabase (IPv6 seul) : Vercel est IPv4. Utilisez le pooler "
+                 "...pooler.supabase.com (session 5432 / transaction 6543). Voir FIX-SUPABASE-IPV6.md")
+            blockers += 1
+        elif is_supabase_pooler(normalized):
+            line("OK", "JAAY_DATABASE_URL",
+                 "pooler Supabase IPv4 (port %s)" % (normalized.split("@")[-1].split("/")[0]))
+        else:
+            line("OK", "JAAY_DATABASE_URL", "PostgreSQL")
     elif db_url.startswith("sqlite"):
         line("FAIL", "JAAY_DATABASE_URL", "SQLite est incompatible avec Vercel (disque ephemeral)")
         blockers += 1

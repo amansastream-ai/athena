@@ -109,8 +109,8 @@ def test_vercel_config_is_valid():
     assert (ROOT / "requirements.txt").exists()
 
 
-def test_vercel_refuses_sqlite_at_startup():
-    """Sans PostgreSQL, le demarrage doit echouer tot avec un message clair."""
+def test_vercel_reports_sqlite_as_config_error_without_breaking_import():
+    """La config ne doit PLUS lever a l'import (sinon Vercel ne bundle pas app/)."""
     env = dict(os.environ)
     env.update({
         "VERCEL": "1", "JAAY_ENV": "production",
@@ -118,11 +118,15 @@ def test_vercel_refuses_sqlite_at_startup():
         "JAAY_DATABASE_URL": "sqlite:////tmp/jaay-vercel-test.db",
     })
     proc = subprocess.run(
-        [sys.executable, "-c", "from app.config import settings; print(settings.database_url)"],
+        [sys.executable, "-c",
+         "import json; from app.config import settings; "
+         "print(json.dumps({'error': settings.config_error, 'url': settings.database_url}))"],
         cwd=str(ROOT), env=env, capture_output=True, text=True, timeout=60,
     )
-    assert proc.returncode != 0
-    assert "PostgreSQL sur Vercel" in proc.stderr
+    assert proc.returncode == 0, proc.stderr
+    body = json.loads(proc.stdout.strip())
+    assert "PostgreSQL sur Vercel" in body["error"]
+    assert body["url"].startswith("sqlite")
 
 
 def test_postgres_url_normalization():
@@ -235,9 +239,66 @@ def test_diag_probe_survives_broken_configuration():
     assert proc.returncode == 0, proc.stdout + proc.stderr
     payload = json.loads(proc.stdout.strip().splitlines()[-1])
     assert payload["code"] == 200
-    assert payload["body"]["application_import"] == "error"
-    assert "JAAY_SECRET_KEY" in payload["body"]["error"]
-    assert payload["body"]["env_presence"]["JAAY_SECRET_KEY"] is False
+    body = payload["body"]
+    # L'import reussit desormais (config non bloquante) : l'erreur est exposee
+    # par config_error et l'application repond 503 via configure_diagnostic().
+    assert body["application_import"] == "ok"
+    assert "JAAY_SECRET_KEY" in (body["config_error"] or "")
+    assert body["env_presence"]["JAAY_SECRET_KEY"] is False
+    assert body["package_present"] is True
+
+
+def test_index_has_static_top_level_import_of_app_package():
+    """Regression ModuleNotFoundError: No module named 'app' sur Vercel."""
+    import ast
+
+    tree = ast.parse((ROOT / "index.py").read_text())
+    static_imports = []
+    for node in tree.body:  # niveau module, hors de tout try
+        if isinstance(node, ast.ImportFrom) and node.module:
+            static_imports.append(node.module)
+        elif isinstance(node, ast.Import):
+            static_imports.extend(alias.name for alias in node.names)
+    assert "app.application" in static_imports, \
+        "L'import de app.application doit etre au niveau du module pour etre trace par Vercel"
+
+
+def test_vercel_config_forces_app_package_into_function_bundle():
+    cfg = json.loads((ROOT / "vercel.json").read_text())
+    for entry in cfg["functions"].values():
+        assert "app/" in entry.get("includeFiles", "")
+        assert "app/" not in entry.get("excludeFiles", "")
+
+
+def test_vercel_task_layout_only_needs_index_and_app(tmp_path):
+    """Simule /var/task : uniquement index.py + app/, depuis un autre cwd."""
+    import shutil
+
+    shutil.copy2(ROOT / "index.py", tmp_path / "index.py")
+    shutil.copytree(
+        ROOT / "app", tmp_path / "app",
+        ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+    )
+    env = dict(os.environ)
+    env.pop("PYTHONPATH", None)
+    env.update({"JAAY_ENV": "dev", "JAAY_DATABASE_URL": f"sqlite:///{tmp_path/'var'/'demo.db'}"})
+    code = (
+        "import sys, json\n"
+        f"sys.path.insert(0, {str(tmp_path)!r})\n"
+        "import index\n"
+        "from fastapi.testclient import TestClient\n"
+        "r = TestClient(index.app).get('/__diag')\n"
+        "print(json.dumps({'code': r.status_code, 'body': r.json()}))\n"
+    )
+    proc = subprocess.run(
+        [sys.executable, "-c", code], cwd="/tmp", env=env,
+        capture_output=True, text=True, timeout=120,
+    )
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    payload = json.loads(proc.stdout.strip().splitlines()[-1])
+    assert payload["code"] == 200
+    assert payload["body"]["package_present"] is True
+    assert payload["body"]["application_import"] == "ok"
 
 
 def test_vercel_config_has_no_ignored_memory_setting():

@@ -106,11 +106,24 @@ def main() -> int:
     if diag_info:
         line(OK, "sonde disponible",
              f"python={diag_info.get('python')} routes={diag_info.get('routes_count')}")
-        config_error = diag_info.get("config_error_at_import")
+        config_error = (diag_info.get("config_error_at_import")
+                        or diag_info.get("config_error"))
         if config_error:
-            line(FAIL, "erreur a l'import de l'application", str(config_error)[:180])
+            line(FAIL, "configuration de la fonction", str(config_error)[:220])
             hints.append("Corrigez la variable indiquee dans Vercel > Environment Variables, "
                          "puis REDEPLOYEZ (les changements ne s'appliquent qu'au prochain deploy).")
+        dbinfo = diag_info.get("database") or {}
+        if dbinfo.get("host"):
+            line(INFO, "base configuree",
+                 f"{dbinfo['host']}:{dbinfo.get('port')} ipv4={dbinfo.get('ipv4')} "
+                 f"ipv6={dbinfo.get('ipv6')} pooler={dbinfo.get('pooler')}")
+        if dbinfo.get("direct_supabase_ipv6") and not dbinfo.get("ipv4"):
+            line(FAIL, "connexion directe Supabase (IPv6 seul)",
+                 "Vercel est IPv4 uniquement : cette URI ne peut pas fonctionner")
+            hints.append(str(diag_info.get("config_error") or dbinfo.get("hint") or "")[:400]
+                         or "Utilisez le Session/Transaction pooler Supabase.")
+        elif dbinfo.get("hint"):
+            line(INFO, "reseau base", str(dbinfo["hint"])[:180])
         if diag_info.get("application_import") == "error":
             line(FAIL, "import app.application", str(diag_info.get("error", ""))[:180])
         elif diag_info.get("application_import") == "ok":
@@ -161,7 +174,21 @@ def main() -> int:
     elif h.status >= 500:
         snippet = re.sub(r"\s+", " ", h.body)[:180]
         vercel_error = h.headers.get("x-vercel-error", "")
-        if vercel_error:
+        try:
+            error_body = json.loads(h.body)
+        except (json.JSONDecodeError, TypeError):
+            error_body = {}
+        if error_body.get("network_hint") or error_body.get("diagnosis") == "ipv6_egress_unavailable":
+            line(FAIL, "sortie IPv6 indisponible", "connexion PostgreSQL impossible")
+            hints.append(str(error_body.get("network_hint"))[:400])
+            hints.append("Voir FIX-SUPABASE-IPV6.md dans le depot.")
+        elif error_body.get("status") == "misconfigured":
+            line(FAIL, "configuration invalide au demarrage", snippet[:120])
+            if error_body.get("network_hint"):
+                hints.append(str(error_body["network_hint"])[:400])
+            for step in error_body.get("how_to_fix", [])[:4]:
+                hints.append(step)
+        elif vercel_error:
             line(FAIL, "la fonction plante au demarrage",
                  f"HTTP {h.status} x-vercel-error={vercel_error}")
             hints.append(
@@ -190,6 +217,8 @@ def main() -> int:
                 line(FAIL, "base de donnees", str(info.get("database")))
                 hints.append("JAAY_DATABASE_URL incorrecte, base en pause, SSL requis "
                              "(ajoutez ?sslmode=require) ou firewall du fournisseur.")
+                if info.get("database_hint"):
+                    hints.append(str(info["database_hint"])[:400])
             else:
                 line(OK, "base de donnees", info.get("database_backend", "?"))
             if info.get("database_backend") == "sqlite":
