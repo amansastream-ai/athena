@@ -1,0 +1,49 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-jaay}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-CHANGER_MOI}
+      POSTGRES_DB: ${POSTGRES_DB:-jaay}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-jaay} -d ${POSTGRES_DB:-jaay}"]
+      interval: 5s
+      retries: 12
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      JAAY_DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-jaay}:${POSTGRES_PASSWORD:-CHANGER_MOI}@db:5432/${POSTGRES_DB:-jaay}
+      JAAY_ENV: ${JAAY_ENV:-production}
+      JAAY_MEDIA_DIR: /srv/jaay/media
+    volumes:
+      - media:/srv/jaay/media
+      - ./var:/srv/jaay/var
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    profiles: ["proxy"]
+    volumes:
+      - ./ops/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - media:/srv/jaay/media:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - app
+
+volumes:
+  pgdata:
+  media:
