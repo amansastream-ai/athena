@@ -4,7 +4,7 @@
 
 ## ⚠️ Lire avant toute démonstration
 
-Ce dépôt contient une **application réelle et testée** : 79 tests automatisés passent, les pages publiques, les tableaux de bord vendeur/admin et l'API JSON fonctionnent en local.
+Ce dépôt contient une **application réelle et testée** : 99 tests automatisés passent, les pages publiques, les tableaux de bord vendeur/admin et l'API JSON fonctionnent en local.
 
 En revanche, **aucune intégration de paiement ou de messagerie externe n'est active** : il n'existe pas de compte marchand Wave, ni de contrat Orange Money, ni de compte WhatsApp Cloud API, ni de fournisseur SMS. Le parcours de paiement opérationnel est donc **référence + preuve + validation administrateur**. Les adaptateurs Wave/Orange Money/Cloud API sont écrits et testés avec des transports simulés, mais **désactivés**. Voir [`docs/11-etat-des-lieux.md`](docs/11-etat-des-lieux.md) et [`docs/05-paiements-wave-orange-money.md`](docs/05-paiements-wave-orange-money.md).
 
@@ -17,7 +17,7 @@ cp .env.example .env
 # Renseigner JAAY_SECRET_KEY (openssl rand -hex 32)
 python3 -m alembic upgrade head
 python3 -m scripts.seed --demo
-python3 -m pytest -q                  # 79 tests
+python3 -m pytest -q                  # 99 tests
 make dev                              # http://localhost:8000
 ```
 
@@ -75,7 +75,7 @@ app/services/   orders · ledger · payments · fraud · whatsapp · ai · media
 app/templates/  Pages publiques, vendeur, admin (Jinja2, aucun CDN)
 app/static/     CSS + JS locaux (mobile-first)
 migrations/     Alembic — migration initiale + triggers d'immutabilité
-tests/          79 tests Pytest (commissions, paiements, WhatsApp, sécurité, E2E)
+tests/          99 tests Pytest (commissions, paiements, WhatsApp, sécurité, E2E)
 scripts/        seed, sauvegarde, restauration, intégrité, smoke tests
 ops/            Dockerfile, entrypoint, nginx.conf
 docs/           13 documents de conception, déploiement et suivi
@@ -109,6 +109,8 @@ docs/           13 documents de conception, déploiement et suivi
 | [`docs/13-deploiement-vercel.md`](docs/13-deploiement-vercel.md) | Déploiement Vercel pas à pas |
 | [`VARIABLES-VERCEL-DISPARUES.md`](VARIABLES-VERCEL-DISPARUES.md) | Variables Vercel masquées / disparues |
 | [`ETAPE-SUIVANTE.md`](ETAPE-SUIVANTE.md) | Sonde `/__diag` et marche à suivre en cas de 500 |
+| [`CORRECTIF-APP-MANQUANT.md`](CORRECTIF-APP-MANQUANT.md) | Cause réelle du 500 Vercel : package `app/` non embarqué |
+| [`FIX-SUPABASE-IPV6.md`](FIX-SUPABASE-IPV6.md) | `Cannot assign requested address` : Vercel (IPv4) + connexion directe Supabase (IPv6) → utiliser le pooler |
 
 ## Licence
 

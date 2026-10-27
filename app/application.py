@@ -21,6 +21,8 @@ from sqlalchemy import text
 
 from .config import settings
 from .db import engine
+from .db_network import network_hint
+from .diagnostic import configure_diagnostic  # import statique : tracable par le bundler Vercel
 from .seed import init_db, seed_demo
 from .security import set_csrf_cookie
 
@@ -32,6 +34,9 @@ STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    if settings.config_error:
+        yield
+        return
     # Sur serverless, le schema est cree au premier demarrage si JAAY_AUTO_INIT_DB=1.
     # En exploitation etablie, mettre JAAY_AUTO_INIT_DB=0 et utiliser Alembic.
     if settings.auto_init_db:
@@ -63,7 +68,14 @@ def configure_app(app: FastAPI) -> FastAPI:
     """Ajoute mounts, middlewares, gestionnaires d'erreurs, /health et routers.
 
     Appelee aussi bien par l'entree Vercel (``index.py``) que par ``build_app()``.
+
+    Si la configuration est invalide, on transforme l'app en reponse 503
+    explicite : l'import du module a reellement reussi, donc le diagnostic est
+    disponible (contrairement a un `raise` dans config.py).
     """
+    if settings.config_error:
+        return configure_diagnostic(app, RuntimeError(settings.config_error))
+
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR), check_dir=False), name="static")
     # Le dossier media peut etre en lecture seule sur serverless : check_dir=False
     # evite de faire echouer l'import (les uploads doivent alors utiliser S3/R2).
@@ -118,11 +130,13 @@ def configure_app(app: FastAPI) -> FastAPI:
         import os
 
         db_status = "ok"
+        db_hint = None
         try:
             with engine.connect() as conn:
                 conn.execute(text("SELECT 1"))
         except Exception as exc:  # pragma: no cover
             db_status = f"error:{type(exc).__name__}"
+            db_hint = network_hint(exc)
         # Booleens de PRESENCE uniquement : aucune valeur, aucun secret n'est expose.
         # Indispensable pour diagnostiquer un deploiement Vercel depuis l'exterieur,
         # car les variables de type Secret sont invisibles dans le dashboard.
@@ -144,6 +158,8 @@ def configure_app(app: FastAPI) -> FastAPI:
             "demo_mode": settings.demo_mode,
             "runtime": "vercel" if settings.on_vercel else "local",
             "env_presence": env_presence,
+            "database_hint": db_hint,
+            "config_warnings": settings.config_warnings or None,
         }
 
     # Routers HTML et API

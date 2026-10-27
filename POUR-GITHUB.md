@@ -34,7 +34,7 @@ git push -u origin main
 
 Le contrôle `check_before_push` doit afficher **« OK — dépôt publiable »**.
 
-💡 Une fois poussé, GitHub lancera automatiquement `.github/workflows/tests.yml` (79 tests + contrôle anti-fuite).
+💡 Une fois poussé, GitHub lancera automatiquement `.github/workflows/tests.yml` (99 tests + contrôle anti-fuite).
 
 ---
 
@@ -100,7 +100,7 @@ Comptes démo (si `JAAY_DEMO_MODE=1`) : `admin@jaay.local / AdminJaay2026!` · `
 |---|---|
 | `app/` (code, templates, CSS/JS), `index.py`, `vercel.json`, `.python-version`, `.vercelignore`, `.gitignore` | `.env` et tout `.env.*.local` (secrets) |
 | `docs/` (14 documents), `README.md`, `RAPPORT.md`, `VERCEL.md`, `AVANT-GITHUB.md`, `DIAGNOSTIC-BUILD-VERCEL.md` | `var/*.db`, `var/dev_secret.key` (données locales) |
-| `tests/` (79 tests), `scripts/`, `ops/`, `migrations/`, `.github/workflows/tests.yml` | `media/*` sauf `.gitkeep` (uploads) |
+| `tests/` (99 tests), `scripts/`, `ops/`, `migrations/`, `.github/workflows/tests.yml` | `media/*` sauf `.gitkeep` (uploads) |
 | `requirements.txt`, `Dockerfile`, `docker-compose.yml`, `Makefile`, `alembic.ini`, `pytest.ini` | `__pycache__/`, `.pytest_cache/`, `.venv/`, `.vercel/` |
 | `.env.example`, `.env.vercel.example` (modèles sans secrets) | `.git/` (historique) |
 

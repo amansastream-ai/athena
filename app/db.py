@@ -8,8 +8,10 @@ from collections.abc import Iterator
 
 from sqlalchemy import create_engine, event, text
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy.pool import NullPool
 
 from .config import settings
+from .db_network import use_null_pool
 
 
 class Base(DeclarativeBase):
@@ -25,12 +27,21 @@ connect_args: dict = {"check_same_thread": False, "timeout": 20} if _is_sqlite()
 # Sur Vercel, chaque instance serverless ouvre son propre pool : garder des
 # petits pools evite d'epuiser les connexions d'un PostgreSQL manag (Neon,
 # Supabase). pool_recycle < 5 min contourne la fermeture des connexions inactives.
-_pool_kwargs = {} if _is_sqlite() else {
-    "pool_size": 3,
-    "max_overflow": 2,
-    "pool_recycle": 280,
-    "pool_timeout": 10,
-}
+#
+# Exception : le Transaction pooler Supabase (port 6543) fait DEJA le pooling.
+# Supabase recommande alors NullPool cote SQLAlchemy, sinon on obtient un double
+# pool, des commandes de session non supportees et une exhaustion des connexions.
+if _is_sqlite():
+    _pool_kwargs: dict = {}
+elif use_null_pool(settings.database_url):
+    _pool_kwargs = {"poolclass": NullPool}
+else:
+    _pool_kwargs = {
+        "pool_size": 3,
+        "max_overflow": 2,
+        "pool_recycle": 280,
+        "pool_timeout": 10,
+    }
 
 engine = create_engine(
     settings.database_url,

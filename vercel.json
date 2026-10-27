@@ -4,17 +4,24 @@
   "functions": {
     "index.py": {
       "maxDuration": 30,
-      "excludeFiles": "{tests/**,docs/**,var/**,media/**,ops/**,scripts/**,migrations/**,**/__pycache__/**,**/*.pyc,*.md,.env*,Dockerfile,docker-compose.yml,Makefile,alembic.ini,pytest.ini,*.db}"
+      "excludeFiles": "{tests/**,docs/**,var/**,media/**,ops/**,scripts/**,migrations/**,**/__pycache__/**,**/*.pyc,*.md,.env*,Dockerfile,docker-compose.yml,Makefile,alembic.ini,pytest.ini,*.db}",
+      "includeFiles": "app/**"
     },
     "app/main.py": {
       "maxDuration": 30,
-      "excludeFiles": "{tests/**,docs/**,var/**,media/**,ops/**,scripts/**,migrations/**,**/__pycache__/**,**/*.pyc,*.md,.env*,Dockerfile,docker-compose.yml,Makefile,alembic.ini,pytest.ini,*.db}"
+      "excludeFiles": "{tests/**,docs/**,var/**,media/**,ops/**,scripts/**,migrations/**,**/__pycache__/**,**/*.pyc,*.md,.env*,Dockerfile,docker-compose.yml,Makefile,alembic.ini,pytest.ini,*.db}",
+      "includeFiles": "app/**"
     }
   },
   "headers": [
     {
       "source": "/static/(.*)",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=3600" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600"
+        }
+      ]
     }
   ]
 }

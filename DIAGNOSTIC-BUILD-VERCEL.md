@@ -36,7 +36,7 @@ except Exception as exc:
 
 `app/application.py` expose désormais `new_app()`, `configure_app(app)` et `lifespan` ; `app/main.py` ré-exporte l'instance unique. Il n'y a donc **qu'un seul objet FastAPI**, utilisable par Vercel, `uvicorn app.main:app` et les tests.
 
-**Vérifications locales :** `app = FastAPI(...)` bien présent au niveau du module (test AST dédié), `index.app is app.main.app`, lifespan exécuté (25 tables créées au démarrage), `/health`, `/`, `/catalogue`, `/connexion`, `/static/app.css`, `/api/docs` → 200, **79/79 tests passent**.
+**Vérifications locales :** `app = FastAPI(...)` bien présent au niveau du module (test AST dédié), `index.app is app.main.app`, lifespan exécuté (25 tables créées au démarrage), `/health`, `/`, `/catalogue`, `/connexion`, `/static/app.css`, `/api/docs` → 200, **99/99 tests passent**.
 
 👉 **Action :** re-téléchargez l'archive (elle a été reconstruite avec ce fix), remplacez les fichiers dans votre dépôt, poussez, puis déployez. Les variables d'environnement de la section ci-dessous restent **indispensables** : sans elles, vous aurez un 500 (ou, avec le nouveau code, un 503 explicite).
 
@@ -229,4 +229,4 @@ vercel logs athenamarketplace --follow
 | `app/diagnostic.py` | 503 explicite au lieu du 500 muet |
 | `index.py` | Même garde-fou de diagnostic |
 | `scripts/vercel_diagnose.py` | Détecte désormais `x-vercel-error: FUNCTION_INVOCATION_FAILED` |
-| Tests | **79/79 passent** ; smoke 9/9 ; aperçu local sur port 8000 opérationnel |
+| Tests | **99/99 passent** ; smoke 9/9 ; aperçu local sur port 8000 opérationnel |

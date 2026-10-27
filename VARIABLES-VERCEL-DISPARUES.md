@@ -141,4 +141,4 @@ Copiez-collez-moi cette trace : je vous dirai précisément où ça coince.
 | `tests/test_vercel_csrf.py` | Test garantissant qu'aucune valeur de secret n'est exposée |
 | `jaay-github.zip` / `.tar.gz` | Reconstruits avec ces corrections |
 
-**79/79 tests passent**, contrôle anti-fuite OK, aperçu local opérationnel.
+**99/99 tests passent**, contrôle anti-fuite OK, aperçu local opérationnel.

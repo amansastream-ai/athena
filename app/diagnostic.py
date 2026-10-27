@@ -15,6 +15,8 @@ from typing import Any
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
+from .db_network import POOLER_HINT, is_direct_supabase, network_hint
+
 REQUIRED = {
     "JAAY_SECRET_KEY": "cle de signature (32+ caracteres)",
     "JAAY_DATABASE_URL": "URI PostgreSQL (Neon / Supabase)",
@@ -26,6 +28,7 @@ FIX_STEPS = [
     "Vercel > Settings > Environment Variables : renseignez au minimum JAAY_SECRET_KEY, JAAY_DATABASE_URL, JAAY_ENV et JAAY_PUBLIC_BASE_URL (cochez Production).",
     "JAAY_SECRET_KEY : python3 -c \"import secrets; print(secrets.token_hex(32))\" — utilisez une valeur FIXE, ne la regenerez pas a chaque deploiement.",
     "JAAY_DATABASE_URL : postgresql+psycopg2://user:password@host/db?sslmode=require",
+    "SUPABASE : sur Vercel, n'utilisez PAS db.<ref>.supabase.co:5432 (IPv6 seul). " + POOLER_HINT,
     "JAAY_DEMO_MODE=1 si vous voulez les comptes de demonstration, sinon 0.",
     "REDEPLOYEZ ensuite (vercel --prod) : Vercel n'injecte les variables qu'au moment du deploiement.",
     "Logs d'execution : vercel logs <projet> --follow",
@@ -73,6 +76,11 @@ def configure_diagnostic(app: FastAPI, exc: Exception) -> FastAPI:
     """
     report = environment_report()
     reason = _redact(f"{type(exc).__name__}: {exc}")
+    hint = network_hint(exc)
+    if hint:
+        report["network_hint"] = hint
+    if is_direct_supabase(os.environ.get("JAAY_DATABASE_URL", "")):
+        report["database_mode"] = "supabase-direct-ipv6-only"
     app.title = "Jaay — configuration a corriger"
     app.version = "0.1.0"
     app.docs_url = None

@@ -1,5 +1,15 @@
 # Étape suivante — sortir du 500 sur `athena-market.vercel.app`
 
+> 🔥 **Mise à jour — problème actuel (IPv6 Supabase) : voir [`FIX-SUPABASE-IPV6.md`](FIX-SUPABASE-IPV6.md).**
+> L'application démarre désormais, mais `JAAY_DATABASE_URL` pointe vers
+> `db.<ref>.supabase.co:5432`, qui n'est joignable qu'en IPv6 alors que Vercel
+> est IPv4. Il faut remplacer cette URI par celle du **pooler Supabase**
+> (`...pooler.supabase.com:6543`) puis redéployer. La version livrée affiche
+> maintenant un 503 explicite avec cette consigne au lieu d'un 500 opaque.
+>
+> Le contenu ci-dessous décrit les erreurs **précédentes** (build 500, import de
+> `app/`) et reste utile comme historique de diagnostic.
+
 > Mesure du **27 octobre 2026 à 00:57 UTC** depuis cet environnement.
 
 ```
@@ -134,7 +144,7 @@ python3 -m scripts.vercel_diagnose https://athena-market.vercel.app
 
 ## 5. État du projet après cette mise à jour
 
-- **79/79 tests passent**, dont 2 nouveaux tests garantissant que `/__diag` répond même avec une configuration cassée et qu'aucune valeur de secret n'est exposée.
+- **99/99 tests passent**, dont 2 nouveaux tests garantissant que `/__diag` répond même avec une configuration cassée et qu'aucune valeur de secret n'est exposée.
 - Contrôle anti-fuite : **OK — dépôt publiable**.
 - Aperçu local (port 8000) : `/__diag`, `/health`, `/`, `/catalogue`, `/static/app.css` → 200.
 - Archive reconstruite : `jaay-github.zip` / `.tar.gz` / `.sha256`.

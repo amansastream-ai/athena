@@ -11,6 +11,9 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
+from .db_network import config_error as _db_config_error
+from .db_network import normalize_database_url
+
 ROOT = Path(__file__).resolve().parent.parent
 VAR_DIR = ROOT / "var"
 MEDIA_DIR = ROOT / "media"
@@ -164,6 +167,11 @@ class Settings:
     s3_public_base_url: str = _env("JAAY_S3_PUBLIC_BASE_URL", "")
     s3_acl: str = _env("JAAY_S3_ACL", "")  # laisser vide sur Cloudflare R2
 
+    # Erreur de configuration collectee a l'import (au lieu d'un raise qui
+    # empecherait Vercel de tracer les imports du package `app`).
+    config_error: str = ""
+    config_warnings: str = ""
+
     @property
     def is_production(self) -> bool:
         return self.env == "production"
@@ -204,29 +212,44 @@ class Settings:
 
 
 def load_settings() -> Settings:
+    """Charge la configuration SANS lever d'exception.
+
+    Sur Vercel, un `raise` a l'import empechait le bundler de suivre les
+    imports du package `app` et donc de l'inclure dans la fonction. On collecte
+    l'erreur dans `config_error` : `configure_app()` affichera un 503 explicite.
+    """
     s = Settings()
+    errors: list[str] = []
     if s.is_production and not s.secret_key:
-        raise RuntimeError("JAAY_SECRET_KEY est obligatoire en production (32+ caracteres aleatoires).")
+        errors.append("JAAY_SECRET_KEY est obligatoire en production (32+ caracteres aleatoires).")
+        # Cle provisoire : le module doit pouvoir importer, l'app restera en 503.
+        object.__setattr__(s, "secret_key", secrets.token_hex(32))
     if not s.secret_key:
         object.__setattr__(s, "secret_key", _dev_secret())
 
     # Neon, Supabase et Heroku fournissent souvent postgres:// : SQLAlchemy 2 exige
-    # le nom de driver explicite pour psycopg2.
-    url = s.database_url
-    if url.startswith("postgres://"):
-        url = "postgresql+psycopg2://" + url[len("postgres://"):]
-    elif url.startswith("postgresql://"):
-        url = "postgresql+psycopg2://" + url[len("postgresql://"):]
+    # le nom de driver explicite pour psycopg2. On enforce aussi sslmode=require
+    # et on retire les options Prisma inconnues de libpq (voir db_network.py).
+    url = normalize_database_url(s.database_url)
     object.__setattr__(s, "database_url", url)
 
     # Sur une plateforme serverless le disque est ephemeral : SQLite perdrait les
     # donnees a chaque instance. On echoue tot avec un message actionnable.
     if s.on_vercel and url.startswith("sqlite"):
-        raise RuntimeError(
-            "JAAY_DATABASE_URL doit pointer vers PostgreSQL sur Vercel (Neon, Supabase, "
-            "Neon Postgres, etc.). Exemple : "
-            "postgresql+psycopg2://user:password@host/db?sslmode=require"
+        errors.append(
+            "JAAY_DATABASE_URL doit pointer vers PostgreSQL sur Vercel (Neon, Supabase...). "
+            "Exemple : postgresql+psycopg2://user:password@host/db?sslmode=require"
         )
+
+    # VERCEL = IPv4 uniquement. La connexion DIRECTE Supabase est IPv6 : sans ce
+    # controle, on obtient un obscure 'Cannot assign requested address' au lieu
+    # d'une consigne de correction. JAAY_ALLOW_IPV6_DB=1 desactive le garde-fou.
+    db_error = _db_config_error(
+        url, on_vercel=s.on_vercel,
+        allow_ipv6=_bool("JAAY_ALLOW_IPV6_DB", False),
+    )
+    if db_error:
+        errors.append(db_error)
 
     # Stabilise les chemins SQLite relatifs quel que soit le repertoire de lancement.
     if url.startswith("sqlite:///") and not url.startswith("sqlite:////"):
@@ -237,6 +260,14 @@ def load_settings() -> Settings:
     media = s.media_dir if s.media_dir.is_absolute() else (ROOT / s.media_dir).resolve()
     # Ne jamais faire planter l'import si le repertoire du projet est en lecture seule.
     object.__setattr__(s, "media_dir", _writable_dir(media))
+    object.__setattr__(s, "config_error", " | ".join(errors))
+
+    warnings: list[str] = []
+    if s.on_vercel and _bool("JAAY_ALLOW_IPV6_DB", False) and _db_config_error(url, on_vercel=True):
+        warnings.append("JAAY_ALLOW_IPV6_DB=1 : le garde-fou IPv6 est desactive, verifiez la connectivite.")
+    if s.on_vercel and s.media_backend == "local" and not s.s3_enabled:
+        warnings.append("JAAY_MEDIA_BACKEND=local : les uploads de photos echoueront, configurez S3/R2.")
+    object.__setattr__(s, "config_warnings", " | ".join(warnings))
     return s
 
 

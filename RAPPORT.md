@@ -106,7 +106,7 @@ Détail : [`docs/06-whatsapp.md`](docs/06-whatsapp.md).
 | **B** — Prototype/fondations | Auth/OTP/rôles, boutiques/URL, produits/photos, catalogue, dashboards | ✅ code + pages + migration |
 | **C** — Commandes/commissions | Références, états contrôlés, commissions, journal chaîné, notifications admin | ✅ code + tests |
 | **D** — WhatsApp/paiements | Liens tracés + code de demande, adaptateurs Wave/OM/Cloud API, parcours manuel | ✅ code + tests simulés |
-| **E** — Tests/sécurité | 79 tests Pytest, CSRF, isolation, immutabilité, fraude, E2E | ✅ 79/79 passent |
+| **E** — Tests/sécurité | 99 tests Pytest, CSRF, isolation, immutabilité, fraude, E2E | ✅ 99/99 passent |
 | **F** — Déploiement | Alembic, Docker, nginx, sauvegardes, smoke tests, README, plan de lancement | ✅ fichiers livrés, non testés sur serveur réel |
 
 **Plan de mise sur le marché :** pré-lancement (domaine, KYB Wave, contrat Orange, SMS, juridique, 20 vendeurs pilotes) → pilote Dakar (100 boutiques, 500 produits, SLA de validation 2 h) → automatisation des paiements (Wave Checkout + rapprochement Balance) → consolidation nationale → internationalisation. Voir [`docs/10-plan-de-lancement.md`](docs/10-plan-de-lancement.md).
@@ -128,7 +128,7 @@ Détail : [`docs/06-whatsapp.md`](docs/06-whatsapp.md).
 
 ## 9. Résultats des tests et limites
 
-**79 tests réussis, 0 échec** ; 8 bugs réels découverts et corrigés pendant les tests (dont un blocage de la commande démo qui ne passait jamais en `paid`). Les 11 critères de validation demandés sont couverts nominalement : boutique partagée, fiche + WhatsApp, référence unique, 1 000 F → 100 F, 10 000 F → 1 000 F, annulation/remboursement, notification admin, isolation vendeur, absence de double commission, paiement non confirmé jamais payé, cohérence statistiques/journal. Voir [`docs/09-tests-rapport.md`](docs/09-tests-rapport.md).
+**99 tests réussis, 0 échec** ; 8 bugs réels découverts et corrigés pendant les tests (dont un blocage de la commande démo qui ne passait jamais en `paid`). Les 11 critères de validation demandés sont couverts nominalement : boutique partagée, fiche + WhatsApp, référence unique, 1 000 F → 100 F, 10 000 F → 1 000 F, annulation/remboursement, notification admin, isolation vendeur, absence de double commission, paiement non confirmé jamais payé, cohérence statistiques/journal. Voir [`docs/09-tests-rapport.md`](docs/09-tests-rapport.md).
 
 **Non vérifié / non opérationnel (à ne pas présenter comme acquis) :**
 

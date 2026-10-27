@@ -22,7 +22,7 @@
 | Photos produits sur S3 / Cloudflare R2 | `app/services/media.py` |
 | Connexion qui marche en iframe (CSRF signé + cookies CHIPS) | `app/security.py` |
 
-**79 tests automatisés passent**, dont 20 nouveaux tests dédiés à Vercel, à la connexion sans cookies et au contrôle anti-fuite de secrets.
+**99 tests automatisés passent**, dont 23 nouveaux tests dédiés à Vercel, à la connexion sans cookies et au contrôle anti-fuite de secrets.
 
 ---
 
@@ -31,6 +31,7 @@
 ### 1. Créer une base PostgreSQL gratuite
 Neon.tech ou Supabase → copier l'URI de connexion. Ajouter `?sslmode=require`.
 ⚠️ **SQLite est refusé sur Vercel** : le disque serverless est éphémère.
+⚠️ **Supabase** : ne copiez PAS la « direct connection » `db.<ref>.supabase.co:5432` — elle est **IPv6 uniquement** et Vercel n'a pas de sortie IPv6 (`Cannot assign requested address`). Prenez le **Transaction pooler** `...pooler.supabase.com:6543` (ou Session pooler `:5432`), qui est IPv4. Voir [`FIX-SUPABASE-IPV6.md`](FIX-SUPABASE-IPV6.md).
 
 ### 2. Générer la clé secrète
 ```bash
@@ -42,7 +43,7 @@ python3 -c "import secrets; print(secrets.token_hex(32))"
 ```
 JAAY_ENV=production
 JAAY_SECRET_KEY=<clé de l'étape 2>
-JAAY_DATABASE_URL=postgresql+psycopg2://user:pwd@host/db?sslmode=require
+JAAY_DATABASE_URL=postgresql+psycopg2://postgres.<ref>:pwd@aws-0-<region>.pooler.supabase.com:6543/postgres?sslmode=require
 JAAY_PUBLIC_BASE_URL=https://VOTRE-PROJET.vercel.app
 JAAY_COOKIE_SECURE=1
 JAAY_DEV_SHOW_OTP=0
@@ -88,7 +89,7 @@ Le message « accès refusé » venait du jeton CSRF lié à un cookie `SameSite
 - cookies `SameSite=None; Secure; Partitioned` (CHIPS) en HTTPS ;
 - message d'erreur clair (« votre session de sécurité a expiré ») au lieu d'un code brut.
 
-Vérifié : connexion **sans cookies** → `303 /admin`, `/vendeur` → 200, 79/79 tests OK. L'aperçu local sur le port 8000 a été redémarré avec ces correctifs.
+Vérifié : connexion **sans cookies** → `303 /admin`, `/vendeur` → 200, 99/99 tests OK. L'aperçu local sur le port 8000 a été redémarré avec ces correctifs.
 
 ---
 
