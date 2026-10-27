@@ -1,0 +1,27 @@
+{% extends "base.html" %}{% from "macros.html" import product_card, empty with context %}
+{% block content %}
+<section><div class="container">
+  <div class="page-head"><div><h1>Catalogue</h1><p class="muted" style="margin:0">{{ result.total }} produit{{ 's' if result.total > 1 else '' }} trouvé{{ 's' if result.total > 1 else '' }}</p></div></div>
+  <form class="filter-bar" method="get" action="/catalogue">
+    <div class="field"><label for="q">Recherche</label><input id="q" type="search" name="q" value="{{ query.get('q','') }}" placeholder="Mot-clé"></div>
+    <div class="field"><label for="categorie">Catégorie</label><select id="categorie" name="categorie"><option value="">Toutes</option>
+      {% for c in categories %}<option value="{{ c.slug }}" {{ 'selected' if query.get('categorie') == c.slug }}>{{ c.name }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="min_prix">Prix min (F)</label><input id="min_prix" type="number" name="min_prix" value="{{ query.get('min_prix','') }}" min="0"></div>
+    <div class="field"><label for="max_prix">Prix max (F)</label><input id="max_prix" type="number" name="max_prix" value="{{ query.get('max_prix','') }}" min="0"></div>
+    <div class="field"><label for="tri">Trier</label><select id="tri" name="tri">
+      <option value="recent" {{ 'selected' if query.get('tri') == 'recent' }}>Plus récents</option>
+      <option value="popular" {{ 'selected' if query.get('tri') == 'popular' }}>Populaires</option>
+      <option value="price_asc" {{ 'selected' if query.get('tri') == 'price_asc' }}>Prix croissant</option>
+      <option value="price_desc" {{ 'selected' if query.get('tri') == 'price_desc' }}>Prix décroissant</option></select></div>
+    <div class="field" style="flex:0 0 auto"><label class="checkbox"><input type="checkbox" name="dispo" value="1" {{ 'checked' if query.get('dispo') }}> En stock</label></div>
+    <button class="btn btn-primary" type="submit">Filtrer</button>
+  </form>
+  {% if result['items'] %}<div class="grid grid-4">{% for p in result['items'] %}{{ product_card(p, images, slugs) }}{% endfor %}</div>
+  {% else %}{{ empty('Aucun produit trouvé', 'Essayez d’autres mots-clés ou élargissez vos filtres.', '/catalogue', 'Réinitialiser') }}{% endif %}
+  {% if result.pages > 1 %}<nav class="pagination" aria-label="Pages">
+    {% for n in range(1, result.pages + 1) %}
+      {% if n == result.page %}<span class="current">{{ n }}</span>
+      {% else %}<a href="/catalogue?q={{ query.get('q','') }}&categorie={{ query.get('categorie','') }}&min_prix={{ query.get('min_prix','') }}&max_prix={{ query.get('max_prix','') }}&tri={{ query.get('tri','recent') }}&dispo={{ query.get('dispo','') }}&page={{ n }}">{{ n }}</a>{% endif %}
+    {% endfor %}</nav>{% endif %}
+</div></section>
+{% endblock %}

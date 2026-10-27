@@ -1,0 +1,30 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, badge, stat with context %}
+{% block content %}<div class="container dash">{% include "vendeur/_nav.html" %}<div class="dash-main">
+  <div class="page-head"><div><h1>Déclarer une vente WhatsApp</h1><p class="muted" style="margin:0">Une vente conclue dans une conversation privée doit être déclarée pour être comptabilisée.</p></div></div>
+  <div class="notice"><strong>Important :</strong> déclarer une vente <strong>ne confirme pas le paiement</strong>. La commande reste « en attente de vérification » jusqu'à la validation de la preuve par l'administrateur ou la réception d'un webhook signé. Les fausses déclarations sont détectées par croisement statistique.</div>
+  <div class="split"><form class="card card-pad" method="post" action="/vendeur/declarations">{{ csrf() }}
+    <h3>Nouvelle déclaration</h3>
+    <div class="field"><label for="produit">Produit concerné *</label><select id="produit" name="produit" required><option value="">— Choisir —</option>{% for p in products %}<option value="{{ p.id }}">{{ p.title }} ({{ p.price_xof|money }})</option>{% endfor %}</select></div>
+    <div class="field-row"><div class="field"><label for="decl-montant">Montant réel de la vente (F) *</label><input id="decl-montant" name="montant" type="number" min="500" required placeholder="10000"></div>
+    <div class="field"><label for="quantite">Quantité *</label><input id="quantite" name="quantite" type="number" min="1" value="1" required></div></div>
+    <div class="field"><label for="nom_client">Nom du client *</label><input id="nom_client" name="nom_client" type="text" required></div>
+    <div class="field"><label for="telephone_client">Téléphone du client *</label><input id="telephone_client" name="telephone_client" type="tel" required placeholder="77 123 45 67"></div>
+    <div class="field"><label for="code_demande">Code de demande WhatsApp</label><input id="code_demande" name="code_demande" type="text" placeholder="JY-XXXXX"><span class="help">Ce code figure dans le message prérempli reçu par le client. Il relie la vente à la demande tracée.</span></div>
+    <div class="field-row"><div class="field"><label for="fournisseur">Moyen de paiement</label><select id="fournisseur" name="fournisseur"><option value="wave">Wave</option><option value="orange_money">Orange Money</option><option value="free_money">Free Money</option><option value="cash">Espèces</option><option value="bank">Virement</option></select></div>
+    <div class="field"><label for="reference_paiement">Référence de transaction</label><input id="reference_paiement" name="reference_paiement" type="text" placeholder="Ex : WAVE-123456"></div></div>
+    <div class="field"><label for="note">Précisions</label><textarea id="note" name="note" style="min-height:70px" placeholder="Heure, détails de la vente…"></textarea></div>
+    <div class="notice ok">Commission estimée ({{ (rate_bps/100)|round|int }} %) : <strong id="decl-fee" data-rate="{{ rate_bps }}">0 F CFA</strong> — sera calculée définitivement après vérification.</div>
+    <button class="btn btn-primary btn-block" type="submit">Déclarer cette vente</button>
+  </form>
+  <div>
+    <div class="card card-pad"><h3>Derniers codes de demande</h3>
+      <p class="small muted">Clics WhatsApp enregistrés sur vos fiches. Demandez ce code au client lors de la vente.</p>
+      {% if inquiries %}<div class="table-wrap" style="border:0"><table><thead><tr><th>Code</th><th>Date</th><th>Type</th></tr></thead><tbody>
+      {% for i in inquiries %}<tr><td><code>{{ i.claim_code }}</code></td><td>{{ i.created_at.strftime('%d/%m %H:%M') }}</td><td>{{ i.kind }}</td></tr>{% endfor %}</tbody></table></div>
+      {% else %}<p class="muted small">Aucun clic pour l'instant.</p>{% endif %}
+    </div>
+    <div class="card card-pad" style="margin-top:1rem"><h3>Mes déclarations</h3>
+      {% if declarations %}{% for d in declarations %}<div style="border-top:1px solid var(--line);padding:.55rem 0" class="small"><a href="/vendeur/commandes/{{ d.id }}"><strong>{{ d.reference }}</strong></a> — {{ d.total_xof|money }}<br>{{ badge(d.status) }} {{ badge(d.payment_status) }}</div>{% endfor %}
+      {% else %}<p class="muted small" style="margin:0">Aucune déclaration.</p>{% endif %}</div>
+  </div></div>
+</div></div>{% endblock %}

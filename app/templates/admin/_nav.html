@@ -1,0 +1,15 @@
+<aside class="sidebar" aria-label="Menu administrateur">
+  <h4>Administration</h4>
+  <a href="/admin" class="{{ 'active' if path == '/admin' }}">▦ Vue globale</a>
+  <a href="/admin/commandes" class="{{ 'active' if path.startswith('/admin/commandes') }}">▣ Commandes</a>
+  <a href="/admin/boutiques" class="{{ 'active' if path.startswith('/admin/boutiques') }}">⌂ Boutiques</a>
+  <a href="/admin/paiements" class="{{ 'active' if path.startswith('/admin/paiements') }}">◉ Paiements</a>
+  <a href="/admin/reglages" class="{{ 'active' if path == '/admin/reglages' }}">⚙ Paramètres</a>
+  <a href="/admin/journal" class="{{ 'active' if path == '/admin/journal' }}">◈ Journal financier</a>
+  <a href="/admin/audit" class="{{ 'active' if path == '/admin/audit' }}">▤ Audit & webhooks</a>
+  <a href="/admin/notifications" class="{{ 'active' if path == '/admin/notifications' }}">✉ Notifications</a>
+  <h4>Accès rapide</h4>
+  <a href="/admin/export.csv">↓ Export financier</a>
+  <a href="/api/docs" target="_blank">↗ API</a>
+  <a href="/health" target="_blank">↗ Santé</a>
+</aside>

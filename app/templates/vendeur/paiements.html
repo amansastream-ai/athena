@@ -1,0 +1,27 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, badge with context %}
+{% block content %}<div class="container dash">{% include "vendeur/_nav.html" %}<div class="dash-main">
+  <div class="page-head"><div><h1>Moyens de paiement</h1><p class="muted" style="margin:0">Renseignez les comptes sur lesquels vos clients peuvent vous payer.</p></div></div>
+  <div class="notice">Un numéro de téléphone ne permet <strong>pas à lui seul</strong> de générer un lien de paiement dynamique officiel. Les liens Wave Checkout / Orange Money Web Payment exigent un contrat marchand et des clés API. En attendant, Jaay affiche vos coordonnées vérifiées, une référence de commande unique et un parcours de preuve.</div>
+  <div class="split"><form class="card card-pad" method="post" action="/vendeur/paiements">{{ csrf() }}
+    <h3>Ajouter un moyen de paiement</h3>
+    <div class="field"><label for="fournisseur">Fournisseur *</label><select id="fournisseur" name="fournisseur"><option value="wave">Wave</option><option value="orange_money">Orange Money</option><option value="free_money">Free Money</option><option value="bank">Compte bancaire</option><option value="cash">Espèces / retrait</option></select></div>
+    <div class="field"><label for="libelle">Libellé affiché *</label><input id="libelle" name="libelle" type="text" required placeholder="Ex : Wave Business — Boutique Fatou"></div>
+    <div class="field"><label for="numero">Numéro de téléphone associé</label><input id="numero" name="numero" type="tel" placeholder="77 123 45 67"></div>
+    <div class="field"><label for="reference_compte">Code marchand / référence / IBAN</label><input id="reference_compte" name="reference_compte" type="text" placeholder="Facultatif"></div>
+    <button class="btn btn-primary">Enregistrer</button>
+    <p class="tiny muted" style="margin:.7rem 0 0">Ne saisissez jamais un code PIN, un mot de passe ou une clé API secrète ici. Ces informations ne sont pas stockées.</p>
+  </form>
+  <div>
+    <div class="card card-pad"><h3>Mes comptes déclarés</h3>
+      {% if methods %}{% for m in methods %}<div style="border-top:1px solid var(--line);padding:.7rem 0">
+        <strong>{{ m.provider }}</strong> {{ badge('active' if m.is_active else 'suspended') }} {{ '✓ vérifié' if m.is_verified else '⏳ en attente de vérification' }}<br>
+        <span class="small muted">{{ m.label }} · {{ m.phone_e164 or m.account_ref or '—' }}</span></div>{% endfor %}
+      {% else %}<p class="muted small">Aucun moyen de paiement déclaré.</p>{% endif %}
+    </div>
+    <div class="card card-pad" style="margin-top:1rem"><h3>État des intégrations officielles</h3>
+      {% for c in caps %}<div style="border-top:1px solid var(--line);padding:.7rem 0"><strong>{{ c.name }}</strong> {{ badge(c.state) }}
+        <p class="tiny muted" style="margin:.3rem 0 0">{{ c.note }}</p>
+        <p class="tiny muted" style="margin:0">Lien dynamique : {{ 'oui' if c.dynamic_link else 'non' }} · Webhook : {{ 'oui' if c.webhook else 'non' }} · Confirmation auto : {{ 'oui' if c.auto_confirmation else 'non' }}</p></div>{% endfor %}
+    </div>
+  </div></div>
+</div></div>{% endblock %}

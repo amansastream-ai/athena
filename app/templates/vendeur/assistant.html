@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% from "macros.html" import csrf with context %}
+{% block content %}<div class="container dash">{% include "vendeur/_nav.html" %}<div class="dash-main">
+  <div class="page-head"><div><h1>Assistant IA vendeur</h1><p class="muted" style="margin:0">Générez un titre, une description et des mots-clés. Relisez toujours avant publication.</p></div></div>
+  <div class="notice ok">Mode actuel : <strong>{{ 'API IA externe configurée (repli local en cas de panne)' if ai_enabled else 'local déterministe (aucune clé, aucun coût, fonctionne hors ligne)' }}</strong>. L'assistant n'invente aucune caractéristique technique ni aucun prix : la suggestion de prix est une médiane calculée sur les produits comparables enregistrés.</div>
+  <div class="split"><form class="card card-pad" id="ai-form">{{ csrf() }}
+    <h3>Décrivez votre produit</h3>
+    <div class="field"><label for="ai-title">Nom du produit *</label><input id="ai-title" type="text" required minlength="3" placeholder="Ex : Sac en cuir fait main"></div>
+    <div class="field"><label for="ai-keywords">Mots-clés réels (séparés par des virgules)</label><input id="ai-keywords" type="text" placeholder="cuir, marron, deux poches, fabriqué à Dakar"></div>
+    <div class="field-row"><div class="field"><label for="ai-category">Catégorie</label><input id="ai-category" type="text" placeholder="artisanat"></div>
+    <div class="field"><label for="ai-language">Langue</label><select id="ai-language"><option value="fr">Français</option><option value="en">Anglais</option><option value="wo">Wolof</option></select></div></div>
+    <button class="btn btn-primary" type="submit">✦ Générer la fiche</button>
+  </form>
+  <div class="card card-pad"><h3>Résultat à copier</h3>
+    <div id="ai-result" class="notice ok" hidden></div>
+    <div class="field"><label for="ai-out-title">Titre optimisé</label><input id="ai-out-title" type="text"></div>
+    <div class="field"><label for="ai-out-desc">Description</label><textarea id="ai-out-desc" style="min-height:150px"></textarea></div>
+    <div class="field"><label for="ai-out-tags">Mots-clés</label><input id="ai-out-tags" type="text"></div>
+    <a class="btn btn-outline btn-sm" href="/vendeur/produits">Aller publier le produit →</a>
+  </div></div>
+</div></div>{% endblock %}

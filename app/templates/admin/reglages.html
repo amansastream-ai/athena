@@ -1,0 +1,32 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, badge with context %}
+{% block content %}<div class="container dash">{% include "admin/_nav.html" %}<div class="dash-main">
+  <div class="page-head"><div><h1>Paramètres plateforme</h1><p class="muted" style="margin:0">Toute modification est tracée dans le journal d'audit (avant / après / auteur / IP).</p></div></div>
+  <div class="card card-pad"><h3>Modifier un paramètre</h3>
+    <form method="post" action="/admin/reglages" class="inline-form">{{ csrf() }}
+      <div class="field"><label for="cle">Paramètre</label><select id="cle" name="cle">
+        <option value="commission_bps">commission_bps (1000 = 10 %)</option>
+        <option value="payment_fee_bps">payment_fee_bps (frais PSP)</option>
+        <option value="commission_trigger">commission_trigger</option>
+        <option value="manual_payment_enabled">manual_payment_enabled</option>
+        <option value="wave_checkout_enabled">wave_checkout_enabled</option>
+        <option value="om_webpay_enabled">om_webpay_enabled</option>
+        <option value="min_declaration_amount_xof">min_declaration_amount_xof</option>
+        <option value="fraud_review_threshold">fraud_review_threshold</option>
+        <option value="platform_collection_number">platform_collection_number</option>
+        <option value="platform_collection_label">platform_collection_label</option>
+      </select></div>
+      <div class="field"><label for="valeur">Valeur (JSON : nombre, texte entre guillemets, true/false)</label><input id="valeur" name="valeur" type="text" required placeholder='1000, "texte", true…'></div>
+      <button class="btn btn-primary" type="submit">Enregistrer</button>
+    </form>
+  </div>
+  <div class="card card-pad" style="margin-top:1rem"><h3>Valeurs actuelles</h3>
+    <div class="table-wrap" style="border:0"><table><thead><tr><th>Clé</th><th>Valeur</th><th>Interprétation</th></tr></thead><tbody>
+      {% for k, v in settings_all.items() %}<tr><td><code>{{ k }}</code></td><td><strong>{{ v }}</strong></td><td class="small muted">
+        {% if k == 'commission_bps' %}Taux de commission en points de base (1000 = 10 %).{% elif k == 'commission_trigger' %}Moment de reconnaissance : paiement confirmé ou livraison.{% elif k == 'payment_fee_bps' %}Frais de paiement répercutés sur le vendeur.{% elif k == 'platform_collection_number' %}Numéro de la plateforme pour les paiements manuels.{% else %}Paramètre plateforme.{% endif %}
+      </td></tr>{% endfor %}</tbody></table></div>
+  </div>
+  <div class="card card-pad" style="margin-top:1rem"><h3>État des fournisseurs de paiement</h3>
+    {% for c in caps %}<div style="border-top:1px solid var(--line);padding:.7rem 0"><strong>{{ c.name }}</strong> {{ badge(c.state) }}<p class="tiny muted" style="margin:.3rem 0 0">{{ c.note }}</p></div>{% endfor %}
+    <p class="small muted" style="margin-top:.8rem">Activer un fournisseur dans les paramètres ne suffit pas : il faut aussi les variables d'environnement (clés API, secrets webhook) et des tests sandbox réels. <a href="/admin/paiements">Voir la configuration →</a></p>
+  </div>
+</div></div>{% endblock %}

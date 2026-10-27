@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}<section><div class="container" style="max-width:860px">
+<h1>Politique de confidentialité</h1><p class="muted small">Version 1.0 — 25 octobre 2026. À compléter avec l'identité du responsable de traitement, le registre CDP et le DPO avant mise en production.</p>
+<div class="card card-pad">
+<h2>Données collectées</h2><ul>
+<li><strong>Compte :</strong> nom, numéro de téléphone vérifié, e-mail facultatif, mot de passe haché (jamais stocké en clair).</li>
+<li><strong>Boutique :</strong> nom, description, coordonnées de paiement déclarées, ville.</li>
+<li><strong>Commandes :</strong> nom et téléphone du client, adresse de livraison, articles, montants, références de transaction.</li>
+<li><strong>Navigation :</strong> clics sur les boutons WhatsApp (horodatage, type d'appareil, adresse IP hachée), pages vues, favoris.</li>
+</ul>
+<h2>Ce que nous ne collectons pas</h2><p>Jaay n'a <strong>pas accès au contenu des conversations WhatsApp privées</strong> entre un client et un vendeur, sauf si la WhatsApp Business Platform (Cloud API) est déployée avec un numéro dédié, ce qui sera alors explicitement indiqué. Les liens <code>wa.me</code> utilisés par défaut ne transmettent aucune conversation.</p>
+<h2>Finalités</h2><p>Fournir le service, vérifier les paiements, calculer les commissions, prévenir la fraude, produire des statistiques agrégées et respecter les obligations légales. Les données financières sont conservées dans un journal immuable à des fins de preuve comptable.</p>
+<h2>Sécurité</h2><p>Hachage PBKDF2-SHA256 des mots de passe, cookies de session HttpOnly, protections CSRF, permissions par rôle, chiffrement TLS en production, sauvegardes chiffrées, journal d'audit en écriture seule. Les secrets ne figurent jamais dans le code source.</p>
+<h2>Vos droits</h2><p>Vous pouvez demander l'accès, la rectification ou la suppression de vos données non soumises à une obligation de conservation comptable en écrivant à l'administrateur de la plateforme. Une procédure de réclamation sera publiée avec les coordonnées du délégué à la protection des données.</p>
+<h2>Cookies</h2><p>Cookies strictement nécessaires : session (<code>jaay_sid</code>), protection CSRF (<code>jaay_csrf</code>), messages temporaires et vérification OTP. Aucun cookie publicitaire tiers n'est utilisé dans le MVP.</p>
+</div></div></section>{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "base.html" %}{% from "macros.html" import badge, stat with context %}
+{% block content %}<div class="container dash">{% include "admin/_nav.html" %}<div class="dash-main">
+  <div class="page-head"><div><h1>Journal financier</h1><p class="muted" style="margin:0">Écritures en lecture seule, chaînées par SHA-256. Aucune suppression ni modification possible.</p></div></div>
+  <div class="notice {{ 'ok' if chain_ok and audit_ok else 'bad' }}">
+    {{ '✓ Intégrité vérifiée' if chain_ok and audit_ok else '⚠ Alerte intégrité' }} — Journal financier : {{ chain_msg }} · Journal d'audit : {{ audit_msg }}
+  </div>
+  <div class="stat-grid">
+    {{ stat('GMV net', fin.gmv_xof|money, 'Compte gmv') }}
+    {{ stat('Revenu commission', fin.commission_generated_xof|money, 'Compte platform_revenue', 'tone-amber') }}
+    {{ stat('Créances vendeurs', fin.commission_outstanding_xof|money, 'Compte commission_receivable', 'tone-red') }}
+    {{ stat('Trésorerie', fin.cash_xof|money, 'Compte cash', 'tone-blue') }}
+  </div>
+  <div class="card card-pad" style="margin-top:1rem"><h3>Soldes par compte logique</h3>
+    <dl class="kv"><dt>Ventes (gmv)</dt><dd>{{ fin.gmv_xof|money }}</dd>
+      <dt>Revenu plateforme</dt><dd>{{ fin.commission_generated_xof|money }}</dd>
+      <dt>Commission encaissée (brut)</dt><dd>{{ fin.commission_collected_xof|money }}</dd>
+      <dt>Commission encaissée (net après reversements)</dt><dd>{{ fin.commission_collected_net_xof|money }}</dd>
+      <dt>Commission en attente</dt><dd>{{ fin.commission_outstanding_xof|money }}</dd>
+      <dt>Dû aux vendeurs</dt><dd>{{ fin.vendor_payable_xof|money }}</dd>
+      <dt>Frais de paiement</dt><dd>{{ fin.payment_fees_xof|money }}</dd>
+      <dt>Frais de livraison à reverser</dt><dd>{{ fin.delivery_payable_xof|money }}</dd>
+      <dt>Nombre d'écritures</dt><dd>{{ fin.ledger_entries }}</dd></dl>
+  </div>
+  <div class="card card-pad" style="margin-top:1rem"><h3>Dernières écritures</h3>
+    <div class="table-wrap" style="border:0"><table><thead><tr><th>#</th><th>Date</th><th>Type</th><th>Compte</th><th class="num">Montant</th><th>Description</th><th>Hachage</th></tr></thead><tbody>
+    {% for e in entries %}<tr><td>{{ e.id }}</td><td>{{ e.created_at.strftime('%d/%m %H:%M:%S') }}</td><td>{{ badge(e.entry_type) }}</td><td><code>{{ e.account }}</code></td>
+      <td class="num" style="color:{{ '#b91c1c' if e.amount_xof < 0 else '#166534' }}"><strong>{{ e.amount_xof|money }}</strong></td><td>{{ e.description }}</td>
+      <td><code class="tiny" title="précédent : {{ e.prev_hash }}">{{ e.entry_hash[:12] }}…</code></td></tr>{% endfor %}
+    </tbody></table></div>
+    {% if not entries %}<p class="muted small">Aucune écriture. Elles apparaissent dès le premier paiement vérifié.</p>{% endif %}
+  </div>
+</div></div>{% endblock %}

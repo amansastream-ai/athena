@@ -1,0 +1,82 @@
+{% extends "base.html" %}{% from "macros.html" import product_card, stat with context %}
+{% block content %}
+<div class="hero">
+  <div class="container hero-grid">
+    <div>
+      <span class="pill-row" style="margin:0 0 1rem"><span>🇸🇳 Fait à Dakar</span><span>WhatsApp-first</span><span>0 F pour ouvrir sa boutique</span></span>
+      <h1>Votre boutique en ligne. Gratuite. Partageable partout.</h1>
+      <p class="lead">Jaay transforme n'importe quel commerçant, artisan ou grossiste en e-commerçant en 5 minutes. Chaque produit a son lien, chaque client contacte le vendeur sur WhatsApp, chaque vente validée génère une commission claire et tracée.</p>
+      <div class="hero-actions">
+        <a href="/inscription" class="btn btn-primary">Créer ma boutique gratuitement</a>
+        <a href="/catalogue" class="btn btn-wa">Explorer les produits</a>
+      </div>
+      <div class="pill-row"><span>✓ Lien public personnalisé</span><span>✓ Catalogue illimité</span><span>✓ Tableau de bord inclus</span></div>
+    </div>
+    <div class="hero-cta">
+      <h3>Comment ça marche ?</h3>
+      <ol>
+        <li>Créez votre boutique et vérifiez votre numéro.</li>
+        <li>Ajoutez vos produits, prix, photos et stocks.</li>
+        <li>Partagez votre lien sur WhatsApp, Facebook, TikTok.</li>
+        <li>Le client vous écrit ou commande directement.</li>
+        <li>La vente vérifiée génère {{ (rate_bps/100)|round|int }} % de commission, calculée automatiquement.</li>
+      </ol>
+      <p class="small" style="color:#e6fffb;margin:1rem 0 0">Aucun abonnement. Aucun frais caché. Vous ne payez que sur une vente réellement confirmée.</p>
+    </div>
+  </div>
+</div>
+
+{% if settings.demo_mode %}
+<section style="padding:1.2rem 0 0"><div class="container"><div class="notice">
+  <strong>Mode démonstration.</strong> Comptes de test —
+  Vendeur : <code>fatou@jaay.local / VendeurJaay2026!</code> ·
+  Admin : <code>admin@jaay.local / AdminJaay2026!</code> ·
+  Client : <code>client@jaay.local / ClientJaay2026!</code>.
+  <a href="/connexion">Se connecter →</a>
+</div></div></section>
+{% endif %}
+
+<section><div class="container">
+  <div class="stat-grid">
+    {{ stat('Boutiques actives', shops|length, 'Prêtes à vendre') }}
+    {{ stat('Produits en ligne', featured|length + newest|length, 'Catalogue multi-vendeurs') }}
+    {{ stat('Commission', (rate_bps/100)|round|int ~ ' %', 'Uniquement sur vente validée', 'tone-amber') }}
+    {{ stat('Coût d’entrée', '0 F', 'Inscription gratuite', 'tone-blue') }}
+  </div>
+</div></section>
+
+<section style="padding-top:0"><div class="container">
+  <div class="section-head"><div><h2>Explorer par catégorie</h2><p>Trouvez un produit près de chez vous.</p></div><a href="/catalogue" class="btn btn-outline btn-sm">Tout voir</a></div>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+    {% for c in categories %}<a class="card card-pad" href="/catalogue?categorie={{ c.slug }}" style="text-align:center;font-weight:700;color:var(--ink)">
+      <div style="font-size:1.5rem;margin-bottom:.3rem">▦</div>{{ c.name }}</a>{% endfor %}
+  </div>
+</div></section>
+
+<section style="padding-top:0"><div class="container">
+  <div class="section-head"><div><h2>Produits populaires</h2><p>Les plus consultés cette semaine.</p></div><a href="/catalogue?tri=popular" class="btn btn-outline btn-sm">Voir plus</a></div>
+  {% if featured %}<div class="grid grid-4">{% for p in featured %}{{ product_card(p, images, slugs) }}{% endfor %}</div>
+  {% else %}<div class="card card-pad"><p class="muted">Aucun produit pour l'instant. <a href="/inscription">Soyez le premier vendeur →</a></p></div>{% endif %}
+</div></section>
+
+<section style="padding-top:0"><div class="container">
+  <div class="section-head"><div><h2>Nouveautés</h2><p>Fraîchement publiés par les boutiques.</p></div></div>
+  <div class="grid grid-4">{% for p in newest[:4] %}{{ product_card(p, images, slugs) }}{% endfor %}</div>
+</div></section>
+
+<section style="background:#fff;border-block:1px solid var(--line)"><div class="container">
+  <div class="section-head"><div><h2>Une marketplace pensée pour l'Afrique mobile</h2><p>Simple pour le vendeur, rapide pour le client, fiable pour l'administrateur.</p></div></div>
+  <div class="how">
+    <div class="card"><div class="num">1</div><h3>Boutique en 5 minutes</h3><p class="muted small">Inscription, vérification du téléphone, nom de boutique, URL personnalisée. Aucune compétence technique requise.</p></div>
+    <div class="card"><div class="num">2</div><h3>WhatsApp au centre</h3><p class="muted small">Chaque produit porte un bouton « Renseignements sur WhatsApp » avec message prérempli, prix, référence et lien.</p></div>
+    <div class="card"><div class="num">3</div><h3>Commission traçable</h3><p class="muted small">Un paiement n'est confirmé que par un webhook signé ou la validation d'une preuve. Journal financier immuable et audit.</p></div>
+  </div>
+</div></section>
+
+<section><div class="container">
+  <div class="callout" style="display:flex;justify-content:space-between;align-items:center;gap:1.5rem;flex-wrap:wrap">
+    <div><h2>Transparence totale sur les {{ (rate_bps/100)|round|int }} %</h2><p style="margin:0;color:#78350f">Le client paie le prix affiché. La commission est prélevée sur la part du vendeur, calculée automatiquement et consultable à tout moment dans son tableau de bord.</p></div>
+    <a href="/pages/commission" class="btn btn-primary">Comprendre le modèle</a>
+  </div>
+</div></section>
+{% endblock %}

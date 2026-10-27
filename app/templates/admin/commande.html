@@ -1,0 +1,45 @@
+{% extends "base.html" %}{% from "macros.html" import badge, csrf, stat with context %}
+{% block content %}<div class="container dash">{% include "admin/_nav.html" %}<div class="dash-main">
+  {% set o = view.order %}
+  <div class="page-head"><div><h1>{{ o.reference }}</h1><p class="muted" style="margin:0">{{ shop.name }} · {{ o.customer_name }} ({{ o.customer_phone_e164 }}) · {{ o.created_at.strftime('%d/%m/%Y %H:%M') }} UTC</p></div>
+    <div>{{ badge(o.status) }} {{ badge(o.payment_status) }}</div></div>
+  <div class="stat-grid" style="grid-template-columns:repeat(4,1fr)">
+    {{ stat('Montant', o.total_xof|money, 'Origine ' ~ o.origin) }}
+    {{ stat('Commission', (view.commission.platform_fee_xof|money) if view.commission else '0 F', (view.commission.rate_bps/100)|round|int ~ ' %' if view.commission else '—', 'tone-amber') }}
+    {{ stat('Part vendeur', (view.commission.net_vendor_xof|money) if view.commission else '—', '', 'tone-blue') }}
+    {{ stat('Risque', o.risk_score ~ '/100', 'Score anti-fraude', 'tone-red') }}
+  </div>
+  <div class="split" style="margin-top:1rem"><div>
+    <div class="card card-pad"><h3>Articles et montants</h3><div class="table-wrap" style="border:0"><table><tbody>
+      {% for i in view['items'] %}<tr><td>{{ i.title_snapshot }}</td><td class="num">× {{ i.quantity }}</td><td class="num">{{ i.unit_price_xof|money }}</td><td class="num">{{ i.line_total_xof|money }}</td></tr>{% endfor %}
+      <tr><td colspan="3" class="num">Sous-total</td><td class="num">{{ o.subtotal_xof|money }}</td></tr>
+      {% if o.discount_xof %}<tr><td colspan="3" class="num">Remise</td><td class="num">-{{ o.discount_xof|money }}</td></tr>{% endif %}
+      <tr><td colspan="3" class="num">Livraison (non commissionnée)</td><td class="num">{{ o.delivery_fee_xof|money }}</td></tr>
+      <tr><td colspan="3" class="num"><strong>Total</strong></td><td class="num"><strong>{{ o.total_xof|money }}</strong></td></tr></tbody></table></div>
+      {% if view.commission %}<p class="small muted">Commission calculée le {{ view.commission.calculated_at.strftime('%d/%m/%Y %H:%M') }} · statut {{ badge(view.commission.status) }} · taux figé {{ (view.commission.rate_bps/100)|round|int }} %.</p>{% endif %}
+    </div>
+    <div class="card card-pad" style="margin-top:1rem"><h3>Changer le statut</h3>
+      <p class="small muted">Transitions contrôlées et journalisées. Une annulation ou un remboursement après paiement génère des écritures compensatoires.</p>
+      <div class="share-row">{% for s in view.allowed %}<form method="post" action="/admin/commandes/{{ o.id }}/statut" data-confirm="{{ 'Confirmer ? Les écritures seront compensées.' if s in ['cancelled','refunded','disputed'] else '' }}">{{ csrf() }}<input type="hidden" name="statut" value="{{ s }}"><input type="hidden" name="note" value="Décision administrateur"><button class="btn btn-outline btn-sm" type="submit">→ {{ s|replace('_',' ') }}</button></form>{% endfor %}</div>
+      {% if not view.allowed %}<p class="muted small">Statut final : aucune transition disponible.</p>{% endif %}
+    </div>
+  </div><div>
+    <div class="card card-pad"><h3>Validation du paiement</h3>
+      <p class="small muted">Seule une preuve validée ici ou un webhook signé peut passer le paiement à « paid ».</p>
+      {% for p in view.proofs %}<div style="border-top:1px solid var(--line);padding:.7rem 0">
+        <strong>{{ p.provider }}</strong> — <code>{{ p.provider_reference }}</code><br><span class="small">{{ p.amount_xof|money }} · {{ badge(p.status) }}</span>
+        {% if p.note %}<br><span class="tiny muted">{{ p.note }}</span>{% endif %}
+        {% if p.status == 'pending' %}<form method="post" action="/admin/preuves/{{ p.id }}" style="margin-top:.6rem" data-confirm="Confirmer la réception de ce paiement ?">{{ csrf() }}
+          <div class="field"><label>Note de vérification</label><input type="text" name="note" value="Vérifié auprès de l'opérateur"></div>
+          <button class="btn btn-primary btn-sm" name="decision" value="accept" type="submit">✓ Confirmer le paiement</button>
+          <button class="btn btn-outline btn-sm" name="decision" value="reject" type="submit">✗ Rejeter</button></form>{% endif %}
+      </div>{% endfor %}
+      {% if not view.proofs %}<p class="muted small">Aucune preuve soumise.</p>{% endif %}
+      {% for p in view.payments %}<p class="small">Paiement {{ badge(p.status) }} — <code>{{ p.provider_reference }}</code><br><span class="tiny muted">Vérification : {{ p.verification }}</span></p>{% endfor %}
+    </div>
+    <div class="card card-pad" style="margin-top:1rem"><h3>Signaux anti-fraude</h3>
+      {% if view.risk_signals %}<ul class="small">{% for s in view.risk_signals %}<li>{{ s }}</li>{% endfor %}</ul>{% else %}<p class="muted small">Aucun signal.</p>{% endif %}
+      <p class="tiny muted">Solde de commissions dû par cette boutique : <strong>{{ balance|money }}</strong></p>
+    </div>
+  </div></div>
+</div></div>{% endblock %}

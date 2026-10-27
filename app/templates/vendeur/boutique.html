@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, badge with context %}
+{% block content %}<div class="container dash">{% include "vendeur/_nav.html" %}<div class="dash-main">
+  <div class="page-head"><div><h1>Ma boutique</h1><p class="muted" style="margin:0">Personnalisez votre vitrine publique.</p></div>{{ badge(shop.status if shop else 'pending') }}</div>
+  {% if shop %}<div class="notice ok"><strong>Votre lien :</strong> <code>{{ request.base_url }}boutique/{{ shop.slug }}</code>
+    <button class="btn btn-outline btn-sm" data-copy="{{ share.copy }}">⧉ Copier</button>
+    <a class="btn btn-outline btn-sm" href="{{ share.whatsapp }}" target="_blank" rel="noopener">Partager</a>
+    <a class="btn btn-outline btn-sm" href="/boutique/{{ shop.slug }}" target="_blank">Voir ↗</a></div>
+  <p class="small muted">Partagez ce lien sur WhatsApp, Facebook, TikTok et Instagram. Chaque produit possède aussi son propre lien.</p>{% endif %}
+  <form class="card card-pad" method="post" action="/vendeur/boutique">{{ csrf() }}
+    <h3>Informations générales</h3>
+    <div class="field"><label for="nom">Nom de la boutique</label><input id="nom" name="nom" type="text" required value="{{ shop.name if shop else '' }}"></div>
+    <div class="field"><label for="description">Description</label><textarea id="description" name="description" placeholder="Ce que vous vendez, vos points forts, vos horaires…">{{ shop.description if shop else '' }}</textarea></div>
+    <div class="field-row"><div class="field"><label for="whatsapp_num">Numéro WhatsApp (E.164 ou local)</label><input id="whatsapp_num" name="whatsapp_num" type="tel" value="{{ shop.whatsapp_e164 if shop else user.phone_e164 }}"><span class="help">C'est ce numéro que les boutons WhatsApp contactent.</span></div>
+    <div class="field"><label for="ville">Ville</label><input id="ville" name="ville" type="text" value="{{ shop.city if shop else 'Dakar' }}"></div></div>
+    <div class="field"><label for="couleur">Couleur de la boutique</label><input id="couleur" name="couleur" type="text" value="{{ shop.theme_color if shop else '#0f766e' }}" pattern="#[0-9a-fA-F]{6}"></div>
+    <button class="btn btn-primary" type="submit">Enregistrer</button>
+  </form>
+</div></div>{% endblock %}

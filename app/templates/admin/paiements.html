@@ -1,0 +1,33 @@
+{% extends "base.html" %}{% from "macros.html" import badge, csrf with context %}
+{% block content %}<div class="container dash">{% include "admin/_nav.html" %}<div class="dash-main">
+  <div class="page-head"><div><h1>Configuration des paiements</h1><p class="muted" style="margin:0">Ce qui est réellement opérationnel, ce qui nécessite un prestataire.</p></div></div>
+  <div class="notice"><strong>Principe :</strong> aucune intégration n'est annoncée fonctionnelle sans compte marchand, clés API et tests sandbox réels. Le parcours manuel (référence + preuve + validation) est le seul actif par défaut. Voir <code>docs/05-paiements-wave-orange-money.md</code>.</div>
+  <div class="card card-pad"><h3>État des fournisseurs</h3>
+    {% for c in caps %}<div style="border:1px solid var(--line);border-radius:10px;padding:1rem;margin-bottom:.8rem">
+      <div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap"><strong>{{ c.name }}</strong>{{ badge(c.state) }}</div>
+      <p class="small muted" style="margin:.5rem 0">{{ c.note }}</p>
+      <div class="share-row" style="margin:0"><span class="chip">Lien dynamique : {{ 'oui' if c.dynamic_link else 'non' }}</span><span class="chip">Webhook : {{ 'oui' if c.webhook else 'non' }}</span><span class="chip">Confirmation auto : {{ 'oui' if c.auto_confirmation else 'non' }}</span></div>
+    </div>{% endfor %}
+  </div>
+  <div class="card card-pad" style="margin-top:1rem"><h3>Variables d'environnement détectées</h3>
+    <p class="small muted">Les valeurs secrètes ne sont jamais affichées, seulement leur présence.</p>
+    <div class="table-wrap" style="border:0"><table><thead><tr><th>Variable</th><th>Présente</th><th>Mode</th></tr></thead><tbody>
+    {% for name, present, mode in [('WAVE_API_KEY', cfg.wave_api_key, cfg.wave_mode),('WAVE_WEBHOOK_SECRET', cfg.wave_webhook_secret, cfg.wave_mode),('WAVE_SIGNING_SECRET', cfg.wave_signing_secret, cfg.wave_mode),('OM_CLIENT_ID', cfg.om_client_id, cfg.om_mode),('OM_WEBHOOK_SECRET', cfg.om_webhook_secret, cfg.om_mode),('OM_STATUS_URL', cfg.om_status_url, cfg.om_mode),('WA_CLOUD_TOKEN', cfg.wa_cloud_token, 'cloud'),('SMS_API_URL', cfg.sms_api_url, 'sms'),('AI_API_KEY', cfg.ai_api_key, 'ia')] %}
+    <tr><td><code>{{ name }}</code></td><td>{{ badge('active' if present else 'pending') }}</td><td>{{ mode }}</td></tr>{% endfor %}
+    </tbody></table></div>
+  </div>
+  <div class="card card-pad" style="margin-top:1rem"><h3>Coordonnées déclarées par les vendeurs</h3>
+    {% if methods %}<div class="table-wrap" style="border:0"><table><thead><tr><th>Boutique</th><th>Fournisseur</th><th>Libellé</th><th>Numéro / référence</th><th>Vérifié</th><th></th></tr></thead><tbody>
+    {% for m in methods %}<tr><td>{{ shops[m.shop_id].name if m.shop_id in shops else '—' }}</td><td>{{ m.provider }}</td><td>{{ m.label }}</td><td>{{ m.phone_e164 or m.account_ref }}</td><td>{{ '✓' if m.is_verified else '⏳' }}</td>
+    <td>{% if not m.is_verified %}<form method="post" action="/admin/paiements/{{ m.id }}/verifier">{{ csrf() }}<button class="btn btn-primary btn-sm">Vérifier</button></form>{% endif %}</td></tr>{% endfor %}
+    </tbody></table></div>{% else %}<p class="muted small">Aucune coordonnée déclarée.</p>{% endif %}
+  </div>
+  <div class="card card-pad" style="margin-top:1rem"><h3>Procédure d'activation</h3>
+    <div class="steps">
+      <div class="step"><b>1</b><span><strong>Wave :</strong> ouvrir un compte Wave Business (KYB : RCCM, NINEA, pièce d'identité), générer une clé API et un secret webhook, déclarer l'URL HTTPS <code>/webhooks/wave</code>, tester en sandbox puis activer <code>wave_checkout_enabled</code>.</span></div>
+      <div class="step"><b>2</b><span><strong>Orange Money :</strong> signer le contrat marchand Web Payment auprès de Sonatel, récupérer les URLs d'API Senegal sur le portail, renseigner <code>OM_TOKEN_URL</code>, <code>OM_WEBPAYMENT_URL</code>, <code>OM_STATUS_URL</code>, le secret de callback, puis tester.</span></div>
+      <div class="step"><b>3</b><span><strong>Multi-vendeurs :</strong> utiliser l'API <em>Aggregated Merchants</em> de Wave pour attribuer chaque encaissement au sous-marchand, ou encaisser sur le compte plateforme et reverser via l'API Payout.</span></div>
+      <div class="step"><b>4</b><span><strong>Alternative :</strong> un agrégateur agréé (PayDunya, CinetPay, etc.) peut couvrir Wave + Orange + Free + cartes avec une seule API — à évaluer contractuellement et techniquement.</span></div>
+    </div>
+  </div>
+</div></div>{% endblock %}

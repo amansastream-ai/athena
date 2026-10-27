@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% from "macros.html" import badge, csrf with context %}
+{% block content %}<div class="container dash">{% include "admin/_nav.html" %}<div class="dash-main">
+  <div class="page-head"><div><h1>Boutiques</h1><p class="muted" style="margin:0">{{ shops|length }} boutique{{ 's' if shops|length > 1 else '' }} · taux global {{ (rate_bps/100)|round|int }} %</p></div></div>
+  <div class="card card-pad"><div class="table-wrap" style="border:0"><table><thead><tr><th>Boutique</th><th>Vendeur</th><th>Téléphone</th><th>Statut</th><th>Taux spécifique</th><th class="num">Risque</th><th>Actions</th></tr></thead><tbody>
+  {% for s in shops %}{% set owner = owners.get(s.owner_id) %}<tr>
+    <td><a href="/boutique/{{ s.slug }}" target="_blank"><strong>{{ s.name }}</strong></a><br><span class="tiny muted">/{{ s.slug }}</span></td>
+    <td>{{ owner.full_name if owner else '—' }}<br><span class="tiny muted">{{ owner.email if owner else '' }}</span></td>
+    <td>{{ s.whatsapp_e164 }}</td><td>{{ badge(s.status) }}</td>
+    <td><form method="post" action="/admin/boutiques/{{ s.id }}/taux" class="inline-form">{{ csrf() }}<input type="number" name="taux_bps" value="{{ s.commission_bps_override if s.commission_bps_override is not none else '' }}" placeholder="global" min="0" max="10000" style="width:100px"><button class="btn btn-outline btn-sm">OK</button></form><span class="tiny muted">bps (1000 = 10 %)</span></td>
+    <td class="num">{{ s.risk_score }}</td>
+    <td><form method="post" action="/admin/boutiques/{{ s.id }}/statut" class="inline-form">{{ csrf() }}<select name="statut"><option value="active" {{ 'selected' if s.status == 'active' }}>active</option><option value="pending" {{ 'selected' if s.status == 'pending' }}>en attente</option><option value="suspended" {{ 'selected' if s.status == 'suspended' }}>suspendue</option></select><button class="btn btn-outline btn-sm">Appliquer</button></form></td>
+  </tr>{% endfor %}</tbody></table></div></div>
+  <div class="notice" style="margin-top:1rem">Le taux spécifique déroge au taux global pour une boutique. Toute modification est enregistrée dans le journal d'audit. Les commissions déjà calculées ne sont jamais recalculées.</div>
+</div></div>{% endblock %}

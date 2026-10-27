@@ -1,0 +1,44 @@
+{% extends "base.html" %}{% from "macros.html" import csrf with context %}
+{% block content %}
+<div class="form-card">
+  {% if mode == 'login' %}
+    <h1>Connexion</h1><p class="muted small">Accédez à votre espace vendeur ou administrateur.</p>
+    <form method="post" action="/connexion">{{ csrf() }}
+      <div class="field"><label for="identifiant">Téléphone ou e-mail</label><input id="identifiant" name="identifiant" type="text" required autocomplete="username" placeholder="77 123 45 67 ou vous@exemple.sn"></div>
+      <div class="field"><label for="mot_de_passe">Mot de passe</label><input id="mot_de_passe" name="mot_de_passe" type="password" required autocomplete="current-password"></div>
+      <button class="btn btn-primary btn-block" type="submit">Se connecter</button>
+    </form>
+    <p class="small" style="margin-top:1rem">Pas encore de boutique ? <a href="/inscription">Créer ma boutique gratuitement</a></p>
+    {% if settings.demo_mode %}<div class="notice" style="margin-top:1rem"><strong>Comptes démo :</strong><br>
+      <span class="mono tiny">fatou@jaay.local / VendeurJaay2026!</span><br>
+      <span class="mono tiny">admin@jaay.local / AdminJaay2026!</span><br>
+      <span class="mono tiny">client@jaay.local / ClientJaay2026!</span></div>{% endif %}
+
+  {% elif mode == 'register' %}
+    <h1>Créer ma boutique</h1><p class="muted small">Gratuit, sans abonnement. {{ (rate_bps if rate_bps else 10) }} % de commission uniquement sur les ventes vérifiées.</p>
+    <form method="post" action="/inscription">{{ csrf() }}
+      <div class="field"><label for="nom">Votre nom complet</label><input id="nom" name="nom" type="text" required></div>
+      <div class="field"><label for="telephone">Numéro de téléphone (WhatsApp)</label><input id="telephone" name="telephone" type="tel" required placeholder="77 123 45 67"><span class="help">Un code SMS sera envoyé pour vérifier votre numéro.</span></div>
+      <div class="field"><label for="email">E-mail (facultatif)</label><input id="email" name="email" type="email"></div>
+      <div class="field"><label for="mot_de_passe">Mot de passe</label><input id="mot_de_passe" name="mot_de_passe" type="password" required minlength="10"><span class="help">10 caractères minimum, avec lettres et chiffres.</span></div>
+      <hr style="border:0;border-top:1px solid var(--line);margin:1.2rem 0">
+      <h3>Votre boutique</h3>
+      <div class="field"><label for="nom_boutique">Nom de la boutique</label><input id="nom_boutique" name="nom_boutique" type="text" required placeholder="Ex : Teranga Style"></div>
+      <div class="field"><label for="slug_boutique">Identifiant du lien</label><div style="display:flex;align-items:center;gap:.4rem"><span class="small muted">jaay.sn/boutique/</span><input id="slug_boutique" name="slug_boutique" type="text" pattern="[a-z0-9-]+" placeholder="teranga-style"></div><span class="help">Lettres minuscules, chiffres et tirets. Laissez vide pour générer automatiquement.</span></div>
+      <div class="field"><label for="whatsapp">Numéro WhatsApp de la boutique (si différent)</label><input id="whatsapp" name="whatsapp" type="tel" placeholder="77 123 45 67"></div>
+      <button class="btn btn-primary btn-block" type="submit">Créer ma boutique</button>
+      <p class="tiny muted" style="margin-top:.8rem">En vous inscrivant, vous acceptez les <a href="/pages/conditions">conditions d'utilisation</a> et la <a href="/pages/confidentialite">politique de confidentialité</a>, y compris la règle de commission de 10 %.</p>
+    </form>
+    <p class="small" style="margin-top:1rem">Déjà inscrit ? <a href="/connexion">Se connecter</a></p>
+
+  {% else %}
+    <h1>Vérifier mon numéro</h1><p class="muted small">Saisissez le code à 6 chiffres envoyé par SMS. Il expire dans 10 minutes.</p>
+    {% if dev_otp and app_env != 'production' %}<div class="notice">Mode démonstration — code à saisir : <strong class="mono">{{ dev_otp }}</strong><br><span class="tiny">En production, ce code n'est jamais affiché dans l'interface.</span></div>{% endif %}
+    <form method="post" action="/verifier-telephone">{{ csrf() }}
+      <div class="field"><label for="code">Code de vérification</label><input id="code" name="code" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required style="font-size:1.5rem;letter-spacing:.5em;text-align:center"></div>
+      <button class="btn btn-primary btn-block" type="submit">Vérifier et activer ma boutique</button>
+    </form>
+    <p class="small" style="margin-top:1rem"><a href="/inscription">Recommencer l'inscription</a></p>
+  {% endif %}
+</div>
+{% endblock %}

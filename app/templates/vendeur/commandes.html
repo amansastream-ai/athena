@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% from "macros.html" import badge, empty with context %}
+{% block content %}<div class="container dash">{% include "vendeur/_nav.html" %}<div class="dash-main">
+  <div class="page-head"><div><h1>Commandes</h1><p class="muted" style="margin:0">Suivez vos ventes et faites avancer la logistique.</p></div>
+    <a class="btn btn-primary btn-sm" href="/vendeur/declarations">+ Déclarer une vente WhatsApp</a></div>
+  <div class="card card-pad">
+  {% if orders %}<div class="table-wrap" style="border:0"><table><thead><tr><th>Référence</th><th>Date</th><th>Client</th><th class="num">Montant</th><th>Commande</th><th>Paiement</th><th>Risque</th><th></th></tr></thead><tbody>
+    {% for o in orders %}<tr><td><a href="/vendeur/commandes/{{ o.id }}"><strong>{{ o.reference }}</strong></a></td>
+      <td>{{ o.created_at.strftime('%d/%m %H:%M') }}</td><td>{{ o.customer_name }}</td><td class="num">{{ o.total_xof|money }}</td>
+      <td>{{ badge(o.status) }}</td><td>{{ badge(o.payment_status) }}</td>
+      <td>{{ '⚠ ' ~ o.risk_score if o.risk_score >= 30 else '—' }}</td>
+      <td><a class="btn btn-outline btn-sm" href="/vendeur/commandes/{{ o.id }}">Détail</a></td></tr>{% endfor %}
+  </tbody></table></div>{% else %}{{ empty('Aucune commande', 'Partagez le lien de votre boutique et vos produits pour recevoir vos premières commandes.', '/vendeur/boutique', 'Mon lien public') }}{% endif %}
+  </div>
+</div></div>{% endblock %}

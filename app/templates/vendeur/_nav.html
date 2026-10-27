@@ -1,0 +1,15 @@
+<aside class="sidebar" aria-label="Menu vendeur">
+  <h4>Vendeur</h4>
+  <a href="/vendeur" class="{{ 'active' if path == '/vendeur' }}">▦ Tableau de bord</a>
+  <a href="/vendeur/boutique" class="{{ 'active' if path.startswith('/vendeur/boutique') }}">⌂ Ma boutique</a>
+  <a href="/vendeur/produits" class="{{ 'active' if path.startswith('/vendeur/produits') }}">▤ Produits</a>
+  <a href="/vendeur/commandes" class="{{ 'active' if path.startswith('/vendeur/commandes') }}">▣ Commandes</a>
+  <a href="/vendeur/declarations" class="{{ 'active' if path.startswith('/vendeur/declarations') }}">✆ Déclarer une vente</a>
+  <a href="/vendeur/commissions" class="{{ 'active' if path.startswith('/vendeur/commissions') }}">◈ Commissions</a>
+  <a href="/vendeur/paiements" class="{{ 'active' if path.startswith('/vendeur/paiements') }}">◉ Paiements</a>
+  <a href="/vendeur/assistant" class="{{ 'active' if path.startswith('/vendeur/assistant') }}">✦ Assistant IA</a>
+  <h4>Raccourcis</h4>
+  {% if my_shop %}<a href="/boutique/{{ my_shop.slug }}" target="_blank">↗ Voir ma boutique</a>{% endif %}
+  <a href="/vendeur/export.csv">↓ Exporter mes ventes</a>
+  <a href="/pages/aide">? Aide</a>
+</aside>

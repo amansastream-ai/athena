@@ -1,0 +1,89 @@
+{% extends "base.html" %}{% from "macros.html" import product_card, badge, csrf with context %}
+{% block content %}
+<section><div class="container">
+  <nav class="small muted" style="margin-bottom:1rem"><a href="/">Accueil</a> / <a href="/boutique/{{ shop.slug }}">{{ shop.name }}</a> / {{ product.title }}</nav>
+  <div class="product-layout">
+    <div>
+      <div class="gallery-main">{% if images %}<img id="main-image" src="{{ images[0].url }}" alt="{{ product.title }}">{% else %}
+        <div class="placeholder-media" style="font-size:5rem;display:grid;place-items:center;height:100%">▦</div>{% endif %}</div>
+      {% if images|length > 1 %}<div class="gallery-thumbs">{% for im in images %}<img src="{{ im.url }}" alt="{{ im.alt }}">{% endfor %}</div>{% endif %}
+      <div class="card card-pad" style="margin-top:1.2rem"><h3>Description</h3><p style="white-space:pre-line;margin:0">{{ product.description or 'Le vendeur n’a pas encore ajouté de description. Posez-lui la question sur WhatsApp.' }}</p></div>
+    </div>
+    <div>
+      <div class="buy-box">
+        <div style="display:flex;justify-content:space-between;gap:1rem;align-items:start">
+          <div><span class="chip">{{ shop.name }}</span><h1 style="font-size:1.7rem;margin:.6rem 0">{{ product.title }}</h1></div>
+          {{ badge('active' if product.stock > 0 else 'archived') }}
+        </div>
+        <div class="price-big">{{ product.price_xof|money }}</div>
+        <p class="small muted">Prix affiché TTC en francs CFA · Frais de livraison : {{ product.delivery_fee_xof|money }} (ou retrait gratuit)</p>
+        <dl class="kv" style="margin:1rem 0">
+          <dt>Disponibilité</dt><dd>{{ product.stock }} en stock</dd>
+          <dt>Vendeur</dt><dd><a href="/boutique/{{ shop.slug }}">{{ shop.name }}</a></dd>
+          <dt>Localisation</dt><dd>{{ shop.city }}, Sénégal</dd>
+          <dt>Téléphone</dt><dd>{{ shop.whatsapp_e164 }}</dd>
+        </dl>
+        <a id="contact" href="/wa/{{ wa_token }}?source=produit" class="btn btn-wa btn-block" target="_blank" rel="noopener">✆ Renseignements sur WhatsApp</a>
+        <p class="tiny muted" style="text-align:center;margin:.5rem 0 1rem">Le message prérempli contient le nom, le prix, la référence et le lien du produit.</p>
+        <details><summary>Commander directement sur Jaay</summary>
+          <form id="order-form" style="margin-top:1rem">
+            {{ csrf() }}
+            <input type="hidden" id="order-product" value="{{ product.id }}">
+            <div class="field"><label for="order-qty">Quantité</label><input id="order-qty" type="number" value="1" min="1" max="{{ product.stock }}"></div>
+            <div class="field"><label for="order-name">Votre nom</label><input id="order-name" type="text" required placeholder="Ex : Awa Ndoye" value="{{ user.full_name if user else '' }}"></div>
+            <div class="field"><label for="order-phone">Téléphone</label><input id="order-phone" type="tel" required placeholder="77 123 45 67" value="{{ user.phone_e164 if user else '' }}"></div>
+            <div class="field"><label for="order-delivery">Livraison</label><select id="order-delivery"><option value="pickup">Retrait en boutique (0 F)</option><option value="delivery">Livraison ({{ product.delivery_fee_xof }} F)</option></select></div>
+            <div class="field" id="address-field" style="display:none"><label for="order-address">Adresse</label><input id="order-address" type="text" placeholder="Quartier, ville"></div>
+            <div class="field"><label for="order-claim">Code de demande WhatsApp (si vous en avez reçu un)</label><input id="order-claim" type="text" placeholder="JY-XXXXX"></div>
+            <button class="btn btn-primary btn-block" type="submit">Créer la commande</button>
+            <p class="tiny muted" style="margin:.6rem 0 0">La commande obtient une référence unique. <strong>Le paiement n'est jamais confirmé par un simple clic</strong> : un webhook signé ou une preuve validée par un administrateur est nécessaire.</p>
+            <div id="order-error" class="notice bad" style="display:none;margin-top:.8rem"></div>
+          </form>
+        </details>
+        <div class="share-row">
+          <a class="btn btn-outline btn-sm" href="{{ share.whatsapp }}" target="_blank" rel="noopener">WhatsApp</a>
+          <a class="btn btn-outline btn-sm" href="{{ share.facebook }}" target="_blank" rel="noopener">Facebook</a>
+          <a class="btn btn-outline btn-sm" href="{{ share.x }}" target="_blank" rel="noopener">X</a>
+          <button class="btn btn-outline btn-sm" data-copy="{{ share.copy }}">⧉ Copier</button>
+        </div>
+      </div>
+      <div class="notice" style="margin-top:1rem"><strong>Moyens de paiement déclarés par le vendeur :</strong>
+        {% if methods %}{% for m in methods %}<span class="chip" style="margin-left:.3rem">{{ m.provider }} — {{ m.label }}{{ ' ✓' if m.is_verified else ' (en attente de vérification)' }}</span>{% endfor %}
+        {% else %}<span class="small">Contactez le vendeur sur WhatsApp pour convenir du paiement.</span>{% endif %}
+      </div>
+      <div class="card card-pad" style="margin-top:1rem"><h3>Pourquoi ce prix ?</h3><p class="small muted" style="margin:0">Le client paie le prix affiché. La commission de {{ (rate_bps/100)|round|int }} % est due par le vendeur uniquement sur les ventes dont le paiement a été vérifié. <a href="/pages/commission">En savoir plus</a></p></div>
+    </div>
+  </div>
+  <div style="margin-top:2.5rem"><div class="section-head"><h2>Vous aimerez aussi</h2></div>
+    <div class="grid grid-4">{% for p in related %}{{ product_card(p, related_images, slugs) }}{% endfor %}</div></div>
+  <div class="card card-pad" style="margin-top:2rem"><h3>Avis vérifiés</h3>
+    {% if reviews %}{% for r in reviews %}<div style="border-top:1px solid var(--line);padding:.7rem 0"><strong>{{ '★' * r.rating }}</strong> {{ r.comment }}</div>{% endfor %}
+    {% else %}<p class="muted small" style="margin:0">Aucun avis. Seuls les clients ayant une commande payée peuvent en laisser un.</p>{% endif %}</div>
+</div></section>
+{% endblock %}
+{% block scripts %}<script>
+document.addEventListener('DOMContentLoaded',function(){
+  var delivery=document.getElementById('order-delivery'),addr=document.getElementById('address-field');
+  if(delivery) delivery.addEventListener('change',function(){addr.style.display=this.value==='delivery'?'block':'none';});
+  var form=document.getElementById('order-form');
+  if(!form) return;
+  form.addEventListener('submit',async function(e){
+    e.preventDefault();
+    var err=document.getElementById('order-error'); err.style.display='none';
+    var btn=form.querySelector('button[type=submit]'); btn.disabled=true; btn.textContent='Création…';
+    var meta=document.querySelector('meta[name=csrf-token]');
+    var body={items:[{product_id:document.getElementById('order-product').value,quantity:parseInt(document.getElementById('order-qty').value,10)}],
+      customer_name:document.getElementById('order-name').value,
+      customer_phone:document.getElementById('order-phone').value,
+      delivery_method:delivery.value,delivery_address:document.getElementById('order-address').value,
+      claim_code:document.getElementById('order-claim').value.trim(),
+      csrf_token:meta?meta.content:''};
+    try{
+      var res=await fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':body.csrf_token},body:JSON.stringify(body)});
+      var data=await res.json();
+      if(!res.ok) throw new Error(data.detail||data.message||'Erreur');
+      window.location.href=data.url;
+    }catch(ex){err.textContent=ex.message;err.style.display='block';btn.disabled=false;btn.textContent='Créer la commande';}
+  });
+});
+</script>{% endblock %}

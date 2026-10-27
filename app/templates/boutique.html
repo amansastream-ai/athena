@@ -1,0 +1,32 @@
+{% extends "base.html" %}{% from "macros.html" import product_card, empty, badge, csrf with context %}
+{% block content %}
+<div class="shop-hero" style="background:linear-gradient(120deg,{{ shop.theme_color }},#0b3b38)">
+  <div class="container">
+    <div style="display:flex;justify-content:space-between;gap:1.5rem;flex-wrap:wrap;align-items:center">
+      <div>
+        <span class="shop-meta" style="margin:0 0 .7rem;display:inline-block"><span>Boutique vérifiée ✓</span></span>
+        <h1>{{ shop.name }}</h1>
+        <p>{{ shop.description or 'Bienvenue dans notre boutique. Contactez-nous directement sur WhatsApp.' }}</p>
+        <div class="shop-meta"><span>📍 {{ shop.city }}, Sénégal</span><span>📞 {{ shop.whatsapp_e164 }}</span><span>👁 {{ shop.view_count }} visites</span></div>
+      </div>
+      <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+        <a href="/wa/{{ wa_token }}?source=boutique" class="btn btn-wa" target="_blank" rel="noopener">✆ Contacter sur WhatsApp</a>
+        <button class="btn btn-outline" data-copy="{{ share.copy }}">⧉ Copier le lien</button>
+        <a class="btn btn-outline" href="{{ share.whatsapp }}" target="_blank" rel="noopener">Partager</a>
+      </div>
+    </div>
+  </div>
+</div>
+<section><div class="container">
+  <div class="notice ok">Lien public de la boutique : <code>{{ share.copy }}</code> — partagez-le sur WhatsApp, Facebook, TikTok et Instagram.</div>
+  <form class="filter-bar" method="get"><div class="field"><label for="q">Rechercher dans cette boutique</label><input id="q" type="search" name="q" value="{{ query.get('q','') }}"></div><button class="btn btn-primary">Chercher</button></form>
+  <div class="section-head"><h2>Produits ({{ result.total }})</h2></div>
+  {% if result['items'] %}<div class="grid grid-4">{% for p in result['items'] %}{{ product_card(p, images, slugs) }}{% endfor %}</div>
+  {% else %}{{ empty('Aucun produit publié', 'Cette boutique prépare son catalogue. Contactez le vendeur sur WhatsApp.', '/wa/' ~ wa_token, 'Contacter le vendeur') }}{% endif %}
+  {% if result.pages > 1 %}<nav class="pagination">{% for n in range(1, result.pages+1) %}{% if n == result.page %}<span class="current">{{ n }}</span>{% else %}<a href="?q={{ query.get('q','') }}&page={{ n }}">{{ n }}</a>{% endif %}{% endfor %}</nav>{% endif %}
+  <div class="card card-pad" style="margin-top:2rem"><h3>Avis sur cette boutique</h3>
+    {% if reviews %}{% for r in reviews %}<div style="border-top:1px solid var(--line);padding:.7rem 0"><strong>{{ '★' * r.rating }}{{ '☆' * (5-r.rating) }}</strong> — {{ r.comment or 'Avis sans commentaire' }}</div>{% endfor %}
+    {% else %}<p class="muted small" style="margin:0">Aucun avis pour le moment. Seuls les achats confirmés peuvent être notés.</p>{% endif %}
+  </div>
+</div></section>
+{% endblock %}

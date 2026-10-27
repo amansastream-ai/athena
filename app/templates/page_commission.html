@@ -1,0 +1,28 @@
+{% extends "base.html" %}{% from "macros.html" import stat with context %}
+{% block content %}<section><div class="container" style="max-width:900px">
+<h1>La commission de {{ (rate_bps/100)|round|int }} %, expliquée simplement</h1>
+<p class="lead">La création et l'utilisation de votre boutique sont <strong>gratuites</strong>. Jaay ne gagne de l'argent que lorsqu'une vente est réellement vérifiée.</p>
+<div class="stat-grid" style="grid-template-columns:repeat(3,1fr);margin:1.5rem 0">
+  {{ stat('Abonnement', '0 F', 'Aucun frais fixe') }}
+  {{ stat('Commission', (rate_bps/100)|round|int ~ ' %', 'Sur le montant des articles') }}
+  {{ stat('Publication', 'Illimitée', 'Produits et boutiques') }}
+</div>
+<div class="card card-pad"><h2>Exemples concrets</h2>
+<div class="table-wrap"><table><thead><tr><th>Prix de vente</th><th class="num">Commission ({{ (rate_bps/100)|round|int }} %)</th><th class="num">Part vendeur</th></tr></thead><tbody>
+{% for price in [1000, 5000, 10000, 50000, 100000] %}<tr><td>{{ price|money }}</td><td class="num">{{ ((price * rate_bps + 5000)//10000)|money }}</td><td class="num">{{ (price - (price * rate_bps + 5000)//10000)|money }}</td></tr>{% endfor %}
+</tbody></table></div>
+<p class="small muted" style="margin-top:1rem">Les frais de livraison ne sont pas soumis à commission. Les éventuels frais de paiement sont affichés séparément dans le journal financier.</p></div>
+<div class="card card-pad" style="margin-top:1rem"><h2>Quand la commission est-elle due ?</h2>
+<div class="steps">
+<div class="step"><b>1</b><span><strong>Vente déclarée ou commande créée</strong> → aucune commission. Le paiement reste « en attente ».</span></div>
+<div class="step"><b>2</b><span><strong>Paiement vérifié</strong> → webhook signé re-vérifié côté serveur, ou preuve validée par un administrateur.</span></div>
+<div class="step"><b>3</b><span><strong>Commission calculée automatiquement</strong> → une seule écriture par commande, protégée par une contrainte d'unicité.</span></div>
+<div class="step"><b>4</b><span><strong>Annulation, remboursement ou litige</strong> → écriture compensatoire négative, jamais d'effacement de l'historique.</span></div>
+</div></div>
+<div class="card card-pad" style="margin-top:1rem"><h2>Ce que Jaay ne fait jamais</h2>
+<ul><li>Ne considère pas une vente comme payée parce qu'un bouton a été cliqué.</li>
+<li>Ne lit pas vos conversations WhatsApp privées : seul le clic sur le bouton est enregistré.</li>
+<li>Ne laisse pas un vendeur confirmer son propre paiement ou modifier son taux de commission.</li>
+<li>Ne modifie pas le journal financier : chaque écriture est chaînée par hachage et vérifiable.</li></ul></div>
+<p style="margin-top:1.5rem"><a class="btn btn-primary" href="/inscription">Créer ma boutique</a> <a class="btn btn-outline" href="/pages/conditions">Conditions d'utilisation</a></p>
+</div></section>{% endblock %}

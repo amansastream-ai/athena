@@ -1,0 +1,23 @@
+{% extends "base.html" %}{% from "macros.html" import badge, stat with context %}
+{% block content %}<div class="container dash">{% include "vendeur/_nav.html" %}<div class="dash-main">
+  <div class="page-head"><div><h1>Mes commissions</h1><p class="muted" style="margin:0">Taux applicable : {{ (rate_bps/100)|round|int }} % · calculé uniquement sur les ventes dont le paiement est vérifié.</p></div>
+    <a class="btn btn-outline btn-sm" href="/vendeur/export.csv">↓ Exporter (CSV)</a></div>
+  <div class="stat-grid">
+    {{ stat('Commission générée', fin.commission_generated_xof|money, 'Depuis la création') }}
+    {{ stat('Déjà réglée', fin.commission_collected_xof|money, 'Encaissements validés', 'tone-blue') }}
+    {{ stat('Solde dû', fin.commission_outstanding_xof|money, 'À régler', 'tone-red') }}
+    {{ stat('Écritures', fin.ledger_entries, 'Journal immuable', 'tone-amber') }}
+  </div>
+  <div class="card card-pad" style="margin-top:1rem"><h3>Historique des commissions</h3>
+    {% if commissions %}<div class="table-wrap" style="border:0"><table><thead><tr><th>Date</th><th>Commande</th><th class="num">Vente</th><th class="num">Taux</th><th class="num">Commission</th><th class="num">Frais PSP</th><th class="num">Part vendeur</th><th>Statut</th></tr></thead><tbody>
+      {% for c in commissions %}<tr><td>{{ c.calculated_at.strftime('%d/%m/%Y') }}</td><td><a href="/vendeur/commandes/{{ c.order_id }}">{{ c.order_id[:10] }}…</a></td>
+      <td class="num">{{ c.gross_xof|money }}</td><td class="num">{{ (c.rate_bps/100)|round|int }} %</td><td class="num"><strong>{{ c.platform_fee_xof|money }}</strong></td>
+      <td class="num">{{ c.payment_fee_xof|money }}</td><td class="num">{{ c.net_vendor_xof|money }}</td><td>{{ badge(c.status) }}</td></tr>{% endfor %}
+    </tbody></table></div>{% else %}<p class="muted small">Aucune commission. Elles apparaissent après confirmation d'un paiement.</p>{% endif %}
+  </div>
+  <div class="card card-pad" style="margin-top:1rem"><h3>Mes règlements</h3>
+    {% if settlements %}{% for s in settlements %}<div style="border-top:1px solid var(--line);padding:.6rem 0" class="small">{{ s.created_at.strftime('%d/%m/%Y') }} — <strong>{{ s.amount_xof|money }}</strong> via {{ s.method }} — <code>{{ s.reference or s.id[:10] }}</code></div>{% endfor %}
+    {% else %}<p class="muted small" style="margin:0">Aucun règlement enregistré. Contactez l'administrateur pour régler votre solde.</p>{% endif %}
+    <p class="tiny muted" style="margin-top:.8rem">Annulation ou remboursement = écriture compensatoire négative. Aucune ligne n'est supprimée.</p>
+  </div>
+</div></div>{% endblock %}

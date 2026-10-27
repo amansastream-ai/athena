@@ -1,0 +1,116 @@
+{% extends "base.html" %}{% from "macros.html" import badge, csrf, stat with context %}
+{% block content %}
+<section><div class="container" style="max-width:960px">
+  <div class="page-head"><div><h1>Commande {{ order.reference }}</h1><p class="muted" style="margin:0">Créée le {{ order.created_at.strftime('%d/%m/%Y à %H:%M') }} UTC · Boutique <a href="/boutique/{{ shop.slug }}">{{ shop.name }}</a></p></div>
+    <button class="btn btn-outline btn-sm" data-copy="{{ order.reference }}">⧉ Copier la référence</button></div>
+
+  <div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
+    {{ stat('Montant total', order.total_xof|money, 'Articles + livraison') }}
+    {{ stat('Statut commande', '', '') }}
+    {{ stat('Paiement', '', '') }}
+  </div>
+  <div class="card card-pad" style="margin-top:-.4rem;margin-bottom:1rem;display:flex;gap:1rem;flex-wrap:wrap;align-items:center">
+    <strong>Statut :</strong> {{ badge(order.status) }} <strong>Paiement :</strong> {{ badge(order.payment_status) }}
+    {% if view.commission %}<strong>Commission :</strong> <span class="chip">{{ view.commission.platform_fee_xof|money }} ({{ (view.commission.rate_bps/100)|round|int }} %)</span>{% endif %}
+  </div>
+
+  {% if order.payment_status != 'paid' %}
+  <div class="notice"><strong>⏳ Paiement non confirmé.</strong> {{ instructions.warning }} Un clic sur « j'ai payé » ou une redirection depuis l'opérateur ne suffit jamais.</div>
+  {% else %}
+  <div class="notice ok"><strong>✓ Paiement vérifié.</strong> Une écriture a été enregistrée dans le journal financier et la commission calculée automatiquement.</div>
+  {% endif %}
+
+  <div class="split">
+    <div>
+      <div class="card card-pad"><h3>Vos articles</h3>
+        <div class="table-wrap" style="border:0"><table><thead><tr><th>Produit</th><th class="num">Qté</th><th class="num">Prix unitaire</th><th class="num">Total</th></tr></thead>
+        <tbody>{% for i in view['items'] %}<tr><td>{{ i.title_snapshot }}</td><td class="num">{{ i.quantity }}</td><td class="num">{{ i.unit_price_xof|money }}</td><td class="num">{{ i.line_total_xof|money }}</td></tr>{% endfor %}</tbody>
+        <tfoot><tr><td colspan="3" class="num"><strong>Sous-total</strong></td><td class="num">{{ order.subtotal_xof|money }}</td></tr>
+        {% if order.discount_xof %}<tr><td colspan="3" class="num">Remise</td><td class="num">-{{ order.discount_xof|money }}</td></tr>{% endif %}
+        <tr><td colspan="3" class="num">Livraison</td><td class="num">{{ order.delivery_fee_xof|money }}</td></tr>
+        <tr><td colspan="3" class="num"><strong>Total à payer</strong></td><td class="num"><strong>{{ order.total_xof|money }}</strong></td></tr></tfoot></table></div>
+      </div>
+
+      {% if order.payment_status != 'paid' %}
+      <div class="card card-pad" style="margin-top:1rem"><h3>Payer cette commande</h3>
+        <div class="steps" style="margin-bottom:1.2rem">{% for s in instructions.steps %}<div class="step"><b>{{ loop.index }}</b><span class="small">{{ s }}</span></div>{% endfor %}</div>
+        <div class="code-box">Référence : {{ instructions.reference }} — Montant exact : {{ instructions.amount_xof }} F CFA</div>
+        {% if instructions.platform_number %}<p class="small" style="margin-top:.8rem"><strong>Compte plateforme :</strong> {{ instructions.platform_label }} — {{ instructions.platform_number }}</p>{% endif %}
+        {% if instructions.methods %}<p class="small"><strong>Comptes du vendeur vérifiés :</strong>
+          {% for m in instructions.methods %}<span class="chip">{{ m.provider }} · {{ m.label }} · {{ m.phone_e164 or m.account_ref }}</span>{% endfor %}</p>{% endif %}
+
+        <h4 style="margin-top:1.3rem">Paiement en ligne (si activé)</h4>
+        <div class="share-row">
+          {% for code, cap in caps.items() if code in ['wave','orange_money'] %}
+            {% if cap.state in ['live','sandbox'] %}
+              <button type="button" class="btn btn-primary btn-sm" data-checkout="/api/payments/checkout/{{ code }}/{{ order.reference }}">Payer avec {{ cap.name }}</button>
+            {% else %}
+              <span class="chip" title="{{ cap.note }}">{{ cap.name }} : {{ cap.state|replace('_',' ') }}</span>
+            {% endif %}
+          {% endfor %}
+        </div>
+        <p class="tiny muted">Les intégrations ne sont activées qu'après obtention des accès marchands et tests sandbox réels.</p>
+
+        <h4 style="margin-top:1.3rem">Soumettre une preuve de paiement</h4>
+        <form method="post" action="/commandes/{{ order.reference }}/preuve">{{ csrf() }}
+          <div class="field-row"><div class="field"><label for="fournisseur">Opérateur</label><select id="fournisseur" name="fournisseur"><option value="wave">Wave</option><option value="orange_money">Orange Money</option><option value="free_money">Free Money</option><option value="bank">Virement bancaire</option><option value="cash">Espèces</option></select></div>
+          <div class="field"><label for="reference_paiement">ID / référence de transaction</label><input id="reference_paiement" name="reference_paiement" type="text" required placeholder="Ex : WAVE-123456789"></div></div>
+          <div class="field"><label for="montant">Montant payé (F CFA)</label><input id="montant" name="montant" type="number" value="{{ order.total_xof }}" required></div>
+          <div class="field"><label for="note">Note (facultatif)</label><textarea id="note" name="note" style="min-height:70px" placeholder="Heure du virement, nom de l'expéditeur…"></textarea></div>
+          <button class="btn btn-primary" type="submit">Envoyer la preuve</button>
+        </form>
+      </div>
+      {% else %}
+      <div class="card card-pad" style="margin-top:1rem"><h3>Détail financier</h3>
+        {% if view.commission %}<dl class="kv">
+          <dt>Chiffre d'affaires (articles)</dt><dd>{{ view.commission.gross_xof|money }}</dd>
+          <dt>Commission plateforme ({{ (view.commission.rate_bps/100)|round|int }} %)</dt><dd>{{ view.commission.platform_fee_xof|money }}</dd>
+          <dt>Frais de paiement</dt><dd>{{ view.commission.payment_fee_xof|money }}</dd>
+          <dt>Part vendeur</dt><dd>{{ view.commission.net_vendor_xof|money }}</dd>
+          <dt>Statut commission</dt><dd>{{ badge(view.commission.status) }}</dd>
+        </dl>{% endif %}
+        {% for p in view.payments %}<p class="small muted">Paiement vérifié via <strong>{{ p.verification }}</strong> — réf. <code>{{ p.provider_reference }}</code></p>{% endfor %}
+        {% if user and user.id == order.customer_id %}<form method="post" action="/commandes/{{ order.reference }}/avis" style="margin-top:1rem">{{ csrf() }}
+          <div class="field"><label for="note">Votre note</label><select id="note" name="note"><option value="5">★★★★★</option><option value="4">★★★★</option><option value="3">★★★</option><option value="2">★★</option><option value="1">★</option></select></div>
+          <div class="field"><label for="commentaire">Commentaire</label><input id="commentaire" name="commentaire" type="text"></div>
+          <button class="btn btn-outline btn-sm">Publier mon avis</button></form>{% endif %}
+      </div>
+      {% endif %}
+    </div>
+
+    <div>
+      <div class="card card-pad"><h3>Suivi</h3>
+        <ol class="small" style="padding-left:1.2rem">
+          {% for s in ['pending','confirmed','paid','preparing','shipped','delivered'] %}
+          <li style="margin-bottom:.35rem">{{ badge(s) }} {% if order.status == s %}<strong>← étape actuelle</strong>{% endif %}</li>{% endfor %}
+        </ol>
+        {% if view.risk_signals %}<div class="notice bad" style="margin-top:1rem">Signaux de risque : {{ view.risk_signals|join(', ') }}</div>{% endif %}
+      </div>
+      <div class="card card-pad" style="margin-top:1rem"><h3>Besoin d'aide ?</h3>
+        <p class="small muted">Le vendeur répond directement sur WhatsApp. Mentionnez toujours la référence <code>{{ order.reference }}</code>.</p>
+        {% if wa_token %}<a class="btn btn-wa btn-block" href="/wa/{{ wa_token }}?source=commande" target="_blank" rel="noopener">✆ Contacter {{ shop.name }}</a>{% endif %}
+        <a class="btn btn-outline btn-block" style="margin-top:.5rem" href="/pages/aide">Centre d'aide</a>
+      </div>
+      {% if view.proofs %}<div class="card card-pad" style="margin-top:1rem"><h3>Preuves soumises</h3>
+        {% for p in view.proofs %}<div style="border-top:1px solid var(--line);padding:.6rem 0" class="small"><strong>{{ p.provider }}</strong> — <code>{{ p.provider_reference }}</code><br>{{ p.amount_xof|money }} · {{ badge(p.status) }}{% if p.review_note %}<br><span class="muted">{{ p.review_note }}</span>{% endif %}</div>{% endfor %}
+      </div>{% endif %}
+    </div>
+  </div>
+</div></section>
+{% endblock %}
+{% block scripts %}<script>
+document.addEventListener('DOMContentLoaded',function(){
+  document.querySelectorAll('[data-checkout]').forEach(function(btn){
+    btn.addEventListener('click',async function(){
+      btn.disabled=true; btn.textContent='Redirection…';
+      try{
+        var token=document.querySelector('meta[name=csrf-token]').content;
+        var res=await fetch(btn.dataset.checkout,{method:'POST',headers:{'X-CSRF-Token':token,'Content-Type':'application/json'}});
+        var data=await res.json();
+        if(!res.ok) throw new Error(data.detail||'Erreur fournisseur');
+        window.location.href=data.launch_url;
+      }catch(e){ alert('Paiement indisponible : '+e.message); btn.disabled=false; btn.textContent='Réessayer'; }
+    });
+  });
+});
+</script>{% endblock %}

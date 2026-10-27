@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% from "macros.html" import badge with context %}
+{% block content %}<div class="container dash">{% include "admin/_nav.html" %}<div class="dash-main">
+  <div class="page-head"><div><h1>Notifications administrateur</h1><p class="muted" style="margin:0">Commandes, ventes déclarées, preuves soumises et paiements confirmés.</p></div></div>
+  <div class="card card-pad">
+  {% if notifications %}{% for n in notifications %}<div style="border-top:1px solid var(--line);padding:.9rem 0">
+    <div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap"><strong>{{ n.title }}</strong><span class="tiny muted">{{ n.created_at.strftime('%d/%m/%Y %H:%M:%S') }} UTC</span></div>
+    {{ badge(n.kind) }}
+    <p class="small" style="white-space:pre-line;margin:.5rem 0">{{ n.body }}</p>
+    {% if n.link %}<a class="btn btn-outline btn-sm" href="{{ n.link }}">Ouvrir →</a>{% endif %}
+  </div>{% endfor %}{% else %}<p class="muted small">Aucune notification.</p>{% endif %}
+  </div>
+</div></div>{% endblock %}

@@ -1,0 +1,10 @@
+{% extends "base.html" %}{% from "macros.html" import badge, empty with context %}
+{% block content %}<div class="container dash">{% include "admin/_nav.html" %}<div class="dash-main">
+  <div class="page-head"><div><h1>Commandes & transactions</h1><p class="muted" style="margin:0">Vue centralisée de toutes les ventes et de leur statut de paiement.</p></div></div>
+  <div class="tabs"><a href="/admin/commandes">Toutes</a>{% for s in ['pending','pending_verification','paid','delivered','cancelled','refunded','disputed'] %}<a href="/admin/commandes?statut={{ s }}">{{ s|replace('_',' ') }}</a>{% endfor %}<a href="/admin/commandes?origine=vendor_declaration">Ventes déclarées</a></div>
+  <div class="card card-pad">{% if orders %}<div class="table-wrap" style="border:0"><table><thead><tr><th>Référence</th><th>Date</th><th>Boutique</th><th>Client</th><th class="num">Montant</th><th>Commande</th><th>Paiement</th><th>Origine</th><th class="num">Risque</th></tr></thead><tbody>
+  {% for o in orders %}<tr><td><a href="/admin/commandes/{{ o.id }}"><strong>{{ o.reference }}</strong></a></td><td>{{ o.created_at.strftime('%d/%m %H:%M') }}</td>
+  <td>{{ shops[o.shop_id].name if o.shop_id in shops else '—' }}</td><td>{{ o.customer_name }}<br><span class="tiny muted">{{ o.customer_phone_e164 }}</span></td>
+  <td class="num">{{ o.total_xof|money }}</td><td>{{ badge(o.status) }}</td><td>{{ badge(o.payment_status) }}</td><td>{{ o.origin }}</td><td class="num">{{ '⚠ ' ~ o.risk_score if o.risk_score >= 30 else o.risk_score }}</td></tr>{% endfor %}
+  </tbody></table></div>{% else %}{{ empty('Aucune commande', 'Les commandes apparaîtront ici dès qu’un client en créera une.') }}{% endif %}</div>
+</div></div>{% endblock %}

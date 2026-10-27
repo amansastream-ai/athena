@@ -1,0 +1,26 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, badge, empty with context %}
+{% block content %}<div class="container dash">{% include "vendeur/_nav.html" %}<div class="dash-main">
+  <div class="page-head"><div><h1>Mes produits</h1><p class="muted" style="margin:0">{{ products|length }} produit{{ 's' if products|length > 1 else '' }} dans votre catalogue</p></div>
+    <a class="btn btn-outline btn-sm" href="/vendeur/assistant">✦ Assistant IA</a></div>
+  <div class="card card-pad"><h3>Ajouter un produit</h3>
+    <form method="post" action="/vendeur/produits">{{ csrf() }}
+      <div class="form-grid">
+        <div class="field full"><label for="titre">Nom du produit *</label><input id="titre" name="titre" type="text" required minlength="3" placeholder="Ex : Robe wax africaine"></div>
+        <div class="field"><label for="prix">Prix (F CFA) *</label><input id="prix" name="prix" type="number" required min="50" placeholder="10000"></div>
+        <div class="field"><label for="stock">Stock *</label><input id="stock" name="stock" type="number" required min="0" value="1"></div>
+        <div class="field"><label for="categorie">Catégorie</label><select id="categorie" name="categorie"><option value="">— Choisir —</option>{% for c in categories %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select></div>
+        <div class="field"><label for="livraison">Frais de livraison (F)</label><input id="livraison" name="livraison" type="number" min="0" value="1000"></div>
+        <div class="field full"><label for="description">Description</label><textarea id="description" name="description" placeholder="Matière, tailles, couleurs, conseils d'entretien…"></textarea></div>
+      </div>
+      <button class="btn btn-primary" type="submit">Publier le produit</button>
+      <span class="small muted" style="margin-left:.6rem">Vous pourrez ajouter des photos après publication.</span>
+    </form>
+  </div>
+  <div class="card card-pad" style="margin-top:1rem"><h3>Catalogue</h3>
+  {% if products %}<div class="table-wrap" style="border:0"><table><thead><tr><th>Produit</th><th class="num">Prix</th><th class="num">Stock</th><th>Statut</th><th>Vues</th><th></th></tr></thead><tbody>
+    {% for p in products %}<tr><td><div style="display:flex;align-items:center;gap:.6rem">{% if images.get(p.id) %}<img src="{{ images.get(p.id) }}" width="38" height="38" style="border-radius:7px;object-fit:cover">{% else %}<span style="width:38px;height:38px;background:#f1f5f4;border-radius:7px;display:grid;place-items:center">▦</span>{% endif %}<span>{{ p.title }}</span></div></td>
+      <td class="num">{{ p.price_xof|money }}</td><td class="num">{{ p.stock }}</td><td>{{ badge(p.status) }}</td><td>{{ p.view_count }}</td>
+      <td><a class="btn btn-outline btn-sm" href="/vendeur/produits/{{ p.id }}">Modifier</a> <a class="btn btn-ghost btn-sm" href="/boutique/{{ shop.slug }}/produit/{{ p.slug }}" target="_blank">Voir</a></td></tr>{% endfor %}
+  </tbody></table></div>{% else %}{{ empty('Aucun produit', 'Ajoutez votre premier produit avec le formulaire ci-dessus.') }}{% endif %}
+  </div>
+</div></div>{% endblock %}

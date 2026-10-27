@@ -1,0 +1,35 @@
+{% extends "base.html" %}{% from "macros.html" import csrf, badge with context %}
+{% block content %}<div class="container dash">{% include "vendeur/_nav.html" %}<div class="dash-main">
+  <div class="page-head"><div><h1>{{ product.title }}</h1><p class="muted" style="margin:0"><a href="/boutique/{{ shop.slug }}/produit/{{ product.slug }}" target="_blank">Voir la fiche publique ↗</a></p></div>{{ badge(product.status) }}</div>
+  <div class="split">
+    <form class="card card-pad" method="post" action="/vendeur/produits/{{ product.id }}">{{ csrf() }}
+      <h3>Modifier la fiche</h3>
+      <div class="field"><label for="titre">Nom</label><input id="titre" name="titre" type="text" value="{{ product.title }}" required></div>
+      <div class="field-row"><div class="field"><label for="prix">Prix (F CFA)</label><input id="prix" name="prix" type="number" value="{{ product.price_xof }}" min="0" required></div>
+      <div class="field"><label for="stock">Stock</label><input id="stock" name="stock" type="number" value="{{ product.stock }}" min="0" required></div></div>
+      <div class="field-row"><div class="field"><label for="categorie">Catégorie</label><select id="categorie" name="categorie"><option value="">—</option>{% for c in categories %}<option value="{{ c.id }}" {{ 'selected' if c.id == product.category_id }}>{{ c.name }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="livraison">Livraison (F)</label><input id="livraison" name="livraison" type="number" value="{{ product.delivery_fee_xof }}" min="0"></div></div>
+      <div class="field"><label for="description">Description</label><textarea id="description" name="description">{{ product.description }}</textarea></div>
+      <div class="field"><label for="statut">Visibilité</label><select id="statut" name="statut"><option value="active" {{ 'selected' if product.status == 'active' }}>Publié</option><option value="draft" {{ 'selected' if product.status == 'draft' }}>Brouillon</option><option value="archived" {{ 'selected' if product.status == 'archived' }}>Archivé</option></select></div>
+      <button class="btn btn-primary" type="submit">Enregistrer</button>
+      <a class="btn btn-outline" href="/vendeur/assistant">✦ Améliorer avec l'IA</a>
+    </form>
+    <div>
+      <div class="card card-pad"><h3>Photos</h3>
+        {% if images %}<div class="gallery-thumbs">{% for im in images %}<img src="{{ im.url }}" alt="{{ im.alt }}">{% endfor %}</div>{% else %}<p class="muted small">Aucune photo. Ajoutez-en une : les fiches avec images convertissent mieux.</p>{% endif %}
+        <form method="post" action="/vendeur/produits/{{ product.id }}/image" enctype="multipart/form-data" style="margin-top:1rem">{{ csrf() }}
+          <div class="field"><label for="image-input">Ajouter une image (JPEG, PNG, WebP — convertie automatiquement)</label><input id="image-input" type="file" name="image" accept="image/*" required></div>
+          <div id="image-preview"></div><button class="btn btn-outline btn-sm" type="submit">Envoyer</button>
+        </form>
+      </div>
+      <div class="card card-pad" style="margin-top:1rem"><h3>Lien de partage produit</h3>
+        <p class="small muted">Ce lien ouvre votre fiche. Le bouton WhatsApp génère un message prérempli avec la référence et le prix.</p>
+        <button class="btn btn-outline btn-sm" data-copy="{{ request.base_url }}boutique/{{ shop.slug }}/produit/{{ product.slug }}">⧉ Copier le lien</button>
+        <a class="btn btn-wa btn-sm" href="/wa/{{ wa_token }}?source=vendeur" target="_blank" rel="noopener">Tester le message WhatsApp</a>
+      </div>
+      {% if suggestion.available %}<div class="card card-pad" style="margin-top:1rem"><h3>Repère de prix</h3>
+        <p class="small">Médiane des produits comparables : <strong>{{ suggestion.median_xof|money }}</strong> ({{ suggestion.sample_size }} produits, de {{ suggestion.min_xof|money }} à {{ suggestion.max_xof|money }}).</p>
+        <p class="tiny muted">{{ suggestion.disclaimer }}</p></div>{% endif %}
+    </div>
+  </div>
+</div></div>{% endblock %}

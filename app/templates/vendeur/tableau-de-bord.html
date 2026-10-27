@@ -1,0 +1,39 @@
+{% extends "base.html" %}{% from "macros.html" import stat, badge with context %}
+{% block content %}<div class="container dash">{% include "vendeur/_nav.html" %}<div class="dash-main">
+  <div class="page-head"><div><h1>Bonjour {{ user.full_name }} 👋</h1><p class="muted" style="margin:0">{{ shop.name }} · <a href="/boutique/{{ shop.slug }}" target="_blank">Voir ma boutique ↗</a></p></div>
+    <a class="btn btn-primary btn-sm" href="/vendeur/produits">+ Ajouter un produit</a></div>
+
+  <div class="notice ok"><strong>Votre lien public :</strong> <code>{{ request.base_url }}boutique/{{ shop.slug }}</code>
+    <button class="btn btn-outline btn-sm" data-copy="{{ request.base_url }}boutique/{{ shop.slug }}">⧉ Copier</button>
+    <button class="btn btn-wa btn-sm" data-share-url="{{ request.base_url }}boutique/{{ shop.slug }}" data-share-title="Ma boutique {{ shop.name }}">Partager sur WhatsApp</button></div>
+
+  <div class="stat-grid">
+    {{ stat('Chiffre d’affaires', data.fin.gmv_xof|money, 'Ventes reconnues') }}
+    {{ stat('Commandes', data.orders, data.orders_paid ~ ' payées', 'tone-blue') }}
+    {{ stat('Demandes WhatsApp', data.inquiries, 'Clics tracés', 'tone-amber') }}
+    {{ stat('Commission due', data.commission_due|money, 'Taux ' ~ (data.rate_bps/100)|round|int ~ ' %', 'tone-red') }}
+  </div>
+
+  <div class="split" style="margin-top:1.2rem">
+    <div class="card card-pad"><h3>Dernières commandes</h3>
+      {% if data.recent_orders %}<div class="table-wrap" style="border:0"><table><thead><tr><th>Référence</th><th>Client</th><th class="num">Montant</th><th>Statut</th></tr></thead><tbody>
+      {% for o in data.recent_orders %}<tr><td><a href="/vendeur/commandes/{{ o.id }}">{{ o.reference }}</a></td><td>{{ o.customer_name }}</td><td class="num">{{ o.total_xof|money }}</td><td>{{ badge(o.status) }}</td></tr>{% endfor %}
+      </tbody></table></div>{% else %}<p class="muted small">Aucune commande. Partagez votre lien pour démarrer.</p>{% endif %}
+      <a class="btn btn-outline btn-sm" href="/vendeur/commandes" style="margin-top:.8rem">Toutes les commandes</a>
+    </div>
+    <div class="card card-pad"><h3>Vos finances</h3>
+      <dl class="kv"><dt>Commission générée</dt><dd>{{ data.fin.commission_generated_xof|money }}</dd>
+        <dt>Commission encaissée</dt><dd>{{ data.fin.commission_collected_xof|money }}</dd>
+        <dt>Commission en attente</dt><dd>{{ data.fin.commission_outstanding_xof|money }}</dd>
+        <dt>Part vendeur cumulée</dt><dd>{{ data.fin.vendor_payable_xof|money }}</dd>
+        <dt>Frais de paiement</dt><dd>{{ data.fin.payment_fees_xof|money }}</dd></dl>
+      <a class="btn btn-outline btn-sm" href="/vendeur/commissions">Voir le détail</a>
+      <h4 style="margin-top:1.2rem">Activité (14 jours)</h4>
+      <div class="bars">{% for v in data.chart %}<i style="height:{{ 8 + v * 12 }}px" title="{{ data.chart_labels[loop.index0] }} : {{ v }} commande(s)"></i>{% endfor %}</div>
+    </div>
+  </div>
+
+  <div class="card card-pad" style="margin-top:1rem"><h3>Notifications récentes</h3>
+    {% if notifs %}{% for n in notifs %}<div style="border-top:1px solid var(--line);padding:.6rem 0" class="small"><strong>{{ n.title }}</strong> <span class="muted">· {{ n.created_at.strftime('%d/%m %H:%M') }}</span>{% if n.link %}<a href="{{ n.link }}"> voir →</a>{% endif %}</div>{% endfor %}
+    {% else %}<p class="muted small" style="margin:0">Aucune notification.</p>{% endif %}</div>
+</div></div>{% endblock %}

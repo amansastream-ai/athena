@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% from "macros.html" import badge with context %}
+{% block content %}<div class="container dash">{% include "admin/_nav.html" %}<div class="dash-main">
+  <div class="page-head"><div><h1>Journal d'audit & webhooks</h1><p class="muted" style="margin:0">Traçabilité des opérations sensibles et des événements fournisseurs.</p></div></div>
+  <div class="card card-pad"><h3>Opérations sensibles</h3>
+    <div class="table-wrap" style="border:0"><table><thead><tr><th>#</th><th>Date</th><th>Action</th><th>Acteur</th><th>Entité</th><th>Avant</th><th>Après</th><th>Hachage</th></tr></thead><tbody>
+    {% for l in logs %}<tr><td>{{ l.id }}</td><td>{{ l.created_at.strftime('%d/%m %H:%M:%S') }}</td><td><code>{{ l.action }}</code></td><td>{{ l.actor_role }}<br><span class="tiny muted">{{ l.ip }}</span></td>
+      <td>{{ l.entity_type }}<br><span class="tiny muted">{{ l.entity_id[:10] }}</span></td>
+      <td class="tiny">{{ l.before_json[:60] }}</td><td class="tiny">{{ l.after_json[:60] }}</td><td><code class="tiny">{{ l.entry_hash[:10] }}…</code></td></tr>{% endfor %}
+    </tbody></table></div>{% if not logs %}<p class="muted small">Aucune opération.</p>{% endif %}
+  </div>
+  <div class="card card-pad" style="margin-top:1rem"><h3>Événements webhook reçus</h3>
+    {% if webhooks %}<div class="table-wrap" style="border:0"><table><thead><tr><th>Fournisseur</th><th>ID événement</th><th>Type</th><th>Signature</th><th>Statut</th><th>Erreur</th><th>Reçu le</th></tr></thead><tbody>
+      {% for w in webhooks %}<tr><td>{{ w.provider }}</td><td><code>{{ w.event_id[:24] }}</code></td><td>{{ w.event_type }}</td><td>{{ '✓' if w.signature_valid else '✗' }}</td><td>{{ badge(w.status) }}</td><td class="tiny">{{ w.error }}</td><td>{{ w.received_at.strftime('%d/%m %H:%M') }}</td></tr>{% endfor %}
+    </tbody></table></div>{% else %}<p class="muted small">Aucun webhook reçu. Ils apparaîtront après activation des intégrations officielles.</p>{% endif %}
+  </div>
+</div></div>{% endblock %}

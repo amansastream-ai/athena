@@ -1,0 +1,62 @@
+{% extends "base.html" %}{% from "macros.html" import stat, badge, csrf with context %}
+{% block content %}<div class="container dash">{% include "admin/_nav.html" %}<div class="dash-main">
+  <div class="page-head"><div><h1>Vue globale</h1><p class="muted" style="margin:0">Pilotage financier, validation des preuves et détection des fraudes.</p></div>
+    <a class="btn btn-outline btn-sm" href="/admin/export.csv">↓ Export financier CSV</a></div>
+
+  {% if not data.ledger_chain_ok or not data.audit_chain_ok %}<div class="notice bad">⚠ Intégrité compromise : {{ data.chain_message }}</div>
+  {% else %}<div class="notice ok">✓ Journaux financier et d'audit intègres (chaînes de hachage vérifiées).</div>{% endif %}
+
+  <div class="stat-grid">
+    {{ stat('Chiffre d’affaires', data.fin.gmv_xof|money, 'Ventes reconnues') }}
+    {{ stat('Commissions générées', data.fin.commission_generated_xof|money, 'Taux ' ~ (data.settings.commission_bps/100)|round|int ~ ' %', 'tone-amber') }}
+    {{ stat('Encaissées', data.fin.commission_collected_xof|money, 'Règlements reçus', 'tone-blue') }}
+    {{ stat('En attente', data.fin.commission_outstanding_xof|money, 'Créances vendeurs', 'tone-red') }}
+  </div>
+  <div class="stat-grid" style="margin-top:.9rem">
+    {{ stat('Boutiques', data.shops, data.shops_pending ~ ' en attente') }}
+    {{ stat('Vendeurs / clients', data.vendors ~ ' / ' ~ data.customers, 'Comptes actifs') }}
+    {{ stat('Commandes', data.orders, 'Tous statuts') }}
+    {{ stat('Demandes WhatsApp', data.inquiries, 'Clics tracés') }}
+  </div>
+
+  <div class="split" style="margin-top:1.2rem"><div class="card card-pad">
+    <h3>⏳ Preuves de paiement à vérifier ({{ data.pending_proofs|length }})</h3>
+    <p class="small muted">Valider une preuve confirme le paiement, calcule la commission et écrit dans le journal financier. Cette action est irréversible et auditée.</p>
+    {% if data.pending_proofs %}<div class="table-wrap" style="border:0"><table><thead><tr><th>Commande</th><th>Fournisseur</th><th>Référence</th><th class="num">Montant</th><th></th></tr></thead><tbody>
+    {% for p in data.pending_proofs %}<tr><td><a href="/admin/commandes/{{ p.order_id }}">{{ p.order_id[:10] }}…</a></td><td>{{ p.provider }}</td><td><code>{{ p.provider_reference }}</code></td><td class="num">{{ p.amount_xof|money }}</td>
+      <td><div class="share-row" style="margin:0">
+        <form method="post" action="/admin/preuves/{{ p.id }}" data-confirm="Confirmer ce paiement ? La commission sera calculée.">{{ csrf() }}<input type="hidden" name="decision" value="accept"><input type="hidden" name="note" value="Vérifié"><button class="btn btn-primary btn-sm" type="submit">✓ Valider</button></form>
+        <form method="post" action="/admin/preuves/{{ p.id }}">{{ csrf() }}<input type="hidden" name="decision" value="reject"><input type="hidden" name="note" value="Preuve insuffisante"><button class="btn btn-outline btn-sm" type="submit">✗ Rejeter</button></form>
+      </div></td></tr>{% endfor %}</tbody></table></div>
+    {% else %}<p class="muted small" style="margin:0">Aucune preuve en attente.</p>{% endif %}
+  </div>
+  <div>
+    <div class="card card-pad"><h3>Enregistrer un encaissement</h3>
+      <form method="post" action="/admin/reglements">{{ csrf() }}
+        <div class="field"><label for="boutique">Boutique</label><select id="boutique" name="boutique" required>{% for s in shops_for_settlement if shops_for_settlement %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select></div>
+        <div class="field-row"><div class="field"><label for="montant_reglement">Montant (F)</label><input id="montant_reglement" name="montant" type="number" min="1" required></div>
+        <div class="field"><label for="methode">Méthode</label><select id="methode" name="methode"><option value="wave">Wave</option><option value="orange_money">Orange Money</option><option value="bank">Virement</option><option value="cash">Espèces</option></select></div></div>
+        <div class="field"><label for="reference">Référence</label><input id="reference" name="reference" type="text" placeholder="ID de transaction"></div>
+        <div class="field"><label for="note">Note</label><input id="note" name="note" type="text"></div>
+        <button class="btn btn-primary btn-block" type="submit">Enregistrer le règlement</button>
+      </form>
+      <p class="tiny muted" style="margin:.7rem 0 0">Le montant ne peut pas dépasser le solde dû du vendeur. Les commissions dues sont soldées par ordre chronologique.</p>
+    </div>
+    <div class="card card-pad" style="margin-top:1rem"><h3>Top boutiques (commissions)</h3>
+      {% for name, sid, total, count in data.per_shop %}<div style="display:flex;justify-content:space-between;border-top:1px solid var(--line);padding:.5rem 0" class="small"><a href="/admin/boutiques">{{ name }}</a><strong>{{ total|money }}</strong></div>{% endfor %}
+    </div>
+  </div></div>
+
+  <div class="split" style="margin-top:1rem"><div class="card card-pad"><h3>⚠ Détection des sous-déclarations</h3>
+    {% if anomaly.shops %}<div class="table-wrap" style="border:0"><table><thead><tr><th>Boutique</th><th class="num">Demandes WA</th><th class="num">Ventes déclarées</th><th class="num">Conversion</th><th class="num">Risque</th></tr></thead><tbody>
+    {% for r in anomaly.shops %}<tr><td>{{ r.shop.name }}</td><td class="num">{{ r.inquiries }}</td><td class="num">{{ r.declared }}</td><td class="num">{{ r.conversion }} %</td><td class="num">{{ '⚠' if r.shop.risk_score >= 30 else '—' }} {{ r.shop.risk_score }}</td></tr>{% endfor %}
+    </tbody></table></div>{% else %}<p class="muted small">Pas encore de données.</p>{% endif %}
+    {% if anomaly.flagged_orders %}<h4 style="margin-top:1rem">Commandes signalées</h4>
+    {% for o in anomaly.flagged_orders %}<div class="small" style="border-top:1px solid var(--line);padding:.4rem 0"><a href="/admin/commandes/{{ o.id }}">{{ o.reference }}</a> — score {{ o.risk_score }} {{ badge(o.status) }}</div>{% endfor %}{% endif %}
+  </div><div class="card card-pad"><h3>Ventes déclarées récemment</h3>
+    {% if data.declarations %}{% for o in data.declarations[:8] %}<div style="border-top:1px solid var(--line);padding:.5rem 0" class="small"><a href="/admin/commandes/{{ o.id }}"><strong>{{ o.reference }}</strong></a> — {{ o.total_xof|money }}<br>{{ badge(o.status) }} {{ badge(o.payment_status) }} · risque {{ o.risk_score }}/100</div>{% endfor %}
+    {% else %}<p class="muted small" style="margin:0">Aucune déclaration.</p>{% endif %}
+    <h3 style="margin-top:1.2rem">Notifications</h3>
+    {% for n in data.notifications[:6] %}<div class="small" style="border-top:1px solid var(--line);padding:.45rem 0"><strong>{{ n.title }}</strong><br><span class="muted tiny">{{ n.created_at.strftime('%d/%m %H:%M') }}</span>{% if n.link %}<a href="{{ n.link }}"> voir →</a>{% endif %}</div>{% endfor %}
+  </div></div>
+</div></div>{% endblock %}
